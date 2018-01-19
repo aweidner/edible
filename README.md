@@ -21,8 +21,8 @@ a tutorial that anyone can follow along with to build a small database themselve
 
 # Architecture
 
-The architecture for Edible will closely follow that of Sqlite (see https://www.sqlite.org/arch.html)
-for a diagram.
+The architecture for Edible will closely follow that of Sqlite (see https://www.sqlite.org/arch.html
+for a diagram).
 
 # Tasks and project planning 
 
