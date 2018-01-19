@@ -1,6 +1,7 @@
 # Edible
 [![Build Status](https://travis-ci.org/aweidner/edible.svg?branch=master)](https://travis-ci.org/aweidner/edible)
 [![Coverage Status](https://coveralls.io/repos/github/aweidner/edible/badge.svg?branch=master)](https://coveralls.io/github/aweidner/edible?branch=master)
+[![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
 
 Edible is an **E**mbe**d**da**ble** database written in Lua.  It is heavily inspired and derived from
 Sqlite. Basically Edible is a less capable Sqlite clone.
