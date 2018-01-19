@@ -18,7 +18,7 @@ before_install:
   - luarocks install busted
 
 script:
-  - busted spec
+  - busted -c spec
 
 after_success:
   - coveralls -b .. -r .. -i ./src --dump c.report.json
