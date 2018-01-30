@@ -78,6 +78,16 @@ function BTree.Row:size()
 end
 
 function BTree.Page:new(max_size, rows)
+    -- A Page is a collection of rows which meet a size constraint supplied in
+    -- `max_size`.  A page will not be split when it is over the maximum size,
+    -- and will continue adding data to it.  Users of `Page` should
+    -- regularly call `should_split` to see if the Page can now be split.  If
+    -- the page can be split, users should call `split` which will return two
+    -- pages split as evenly as possible*
+    --
+    -- Rows are kept in sorted order within a page. Rows will be sorted upon being
+    -- supplied to a page if they are not already sorted.
+
     table.sort(rows, function(a, b)
         return a.id < b.id
     end)
@@ -98,6 +108,7 @@ function BTree.Page:add_row(row)
 end
 
 function BTree.Page:size()
+    -- Return the total size of this page in memory
     return lib.sum(coroutine.wrap(function()
         for _, row in ipairs(self.rows) do
             coroutine.yield(row:size())
@@ -106,6 +117,7 @@ function BTree.Page:size()
 end
 
 function BTree.Page:iterate_rows()
+    -- Iterate through all the rows in order
     return coroutine.wrap(function()
         for _, row in ipairs(self.rows) do
             coroutine.yield(row)
@@ -114,14 +126,17 @@ function BTree.Page:iterate_rows()
 end
 
 function BTree.Page:get_row(row_id)
+    -- Returns the row with the given row_id if it exists in this page.
+    -- If the row does not exist in this page an error will be returned
     local row_index = lib.find(self.rows, function(row)
-        return row.id - row_id
+        return row_id - row.id
     end)
     assert(row_index > 0, "Row was not located in this page")
     return self.rows[row_index]
 end
 
 function BTree.Page:check_row(row_id)
+    -- Check to see if the given row is in this page
     if pcall(function() self:get_row(row_id) end) then
         return true
     else
@@ -130,10 +145,18 @@ function BTree.Page:check_row(row_id)
 end
 
 function BTree.Page:should_split()
+    -- Determine if the page should be split.  Pages must be split
+    -- when they contain more than one row AND their size is greater
+    -- than the maximum size.  A page with only one row cannot be split
+    -- since rows are indivisible.
     return self:size() > self.max_size and #self.rows > 1
 end
 
 function BTree.Page:id()
+    -- The Page id is the maximum row id.  This makes it
+    -- simpler when constructing a tree of pages to figure
+    -- out which page to navigate to based on the row being
+    -- searched for.
     return self.rows[#self.rows].id
 end
 
