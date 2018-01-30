@@ -67,25 +67,81 @@ describe("Page", function()
     end)
 
     it("If there is no row matching the id it should throw an exception", function()
+        local page = Page:new(20, {
+            Row:new(2, {
+                NilCell,
+                NilCell
+            }),
+            Row:new(1, {
+                NilCell,
+                NilCell
+            })
+        })
 
+        assert.has.errors(function() page:get_row(27) end)
     end)
 
     it("Should allow checking if a certain id exists in a row", function()
-
+        local page = Page:new(20, {
+            Row:new(2, {
+                NilCell,
+                NilCell
+            }),
+            Row:new(1, {
+                NilCell,
+                NilCell
+            })
+        })
+        assert.equal(page:check_row(27), false)
+        assert.equal(page:check_row(1), true)
     end)
 
     it("Should have a max size", function()
+        assert.equal(Page:new(20, {}).max_size, 20)
     end)
 
     it("Should indicate when it needs to be split based on the size of its rows", function()
+        local page = Page:new(20, {
+            Row:new(2, {
+                NilCell,
+                NilCell
+            }),
+            Row:new(1, {
+                NilCell,
+                NilCell
+            })
+        })
+
+        assert.equal(page:should_split(), true)
+    end)
+
+    it("Should not say it needs to be split when the contents are not over the max size", function()
+        assert.equal(Page:new(40, {}):should_split(), false)
+    end)
+
+    it("Should accept new rows that can be added to it", function()
+        local page = Page:new(40, {})
+        page:add_row(Row:new(1, {}))
+
+        assert.equal(page:get_row(1).id, 1)
+    end)
+
+    it("Should not indicate it can be split if it only has one row", function()
+        assert.equal(Page:new(4, {
+            Row:new(1, NilCell)
+        }):should_split(), false)
+    end)
+
+    it("Should have an id which is the greatest row id", function()
+        local page = Page:new(40, {})
+        page:add_row(Row:new(1, {}))
+        assert.equal(page:id(), 1)
+
+        page:add_row(Row:new(3, {}))
+        assert.equal(page:id(), 3)
     end)
 
     it("Should split itself into evenly sized pages based on row size", function()
     end)
 
-    it("Should not indicate it can be split if it only has one row", function()
-    end)
-
-    it("Should have an id which is the greatest row id", function()
-    end)
 end)

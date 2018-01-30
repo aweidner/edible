@@ -82,10 +82,19 @@ function BTree.Page:new(max_size, rows)
         return a.id < b.id
     end)
 
-    local new_page = {max_size = max_size, rows = rows}
+    local new_page = {max_size = max_size, rows = rows or {}}
     setmetatable(new_page, self)
     self.__index = self
     return new_page
+end
+
+function BTree.Page:add_row(row)
+    -- TODO: Create bisect function and use instead
+    -- of inserting the new row and then sorting
+    table.insert(self.rows, row)
+    table.sort(self.rows, function(a, b)
+        return a.id < b.id
+    end)
 end
 
 function BTree.Page:size()
@@ -110,6 +119,22 @@ function BTree.Page:get_row(row_id)
     end)
     assert(row_index > 0, "Row was not located in this page")
     return self.rows[row_index]
+end
+
+function BTree.Page:check_row(row_id)
+    if pcall(function() self:get_row(row_id) end) then
+        return true
+    else
+        return false
+    end
+end
+
+function BTree.Page:should_split()
+    return self:size() > self.max_size and #self.rows > 1
+end
+
+function BTree.Page:id()
+    return self.rows[#self.rows].id
 end
 
 return BTree
