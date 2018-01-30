@@ -35,6 +35,6 @@ describe("Row", function()
             Cell:new("Hello World")
         })
 
-        assert.equal(row:size(), 43)
+        assert.equal(row:size(), 51)
     end)
 end)

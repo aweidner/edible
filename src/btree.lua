@@ -23,6 +23,7 @@ end
 
 BTree.Cell = {}
 BTree.Row = {}
+BTree.Page = {}
 
 function BTree.Cell:new(data)
     -- A cell is the fundamental data container in edible.  Cells are capable of storing
@@ -62,15 +63,53 @@ function BTree.Row:new(row_id, cells)
 end
 
 function BTree.Row:get(cell_position)
+    -- Return the cell at the given position
     return self.cells[cell_position]
 end
 
 function BTree.Row:size()
+    -- The size of a BTree row is the sum of all the cell sizes plus
+    -- the size of the row id (a number)
     return lib.sum(coroutine.wrap(function()
         for _, cell in ipairs(self.cells) do
             coroutine.yield(cell.size)
         end
-    end))
+    end)) + get_size(self.id)
+end
+
+function BTree.Page:new(max_size, rows)
+    table.sort(rows, function(a, b)
+        return a.id < b.id
+    end)
+
+    local new_page = {max_size = max_size, rows = rows}
+    setmetatable(new_page, self)
+    self.__index = self
+    return new_page
+end
+
+function BTree.Page:size()
+    return lib.sum(coroutine.wrap(function()
+        for _, row in ipairs(self.rows) do
+            coroutine.yield(row:size())
+        end
+    end)) + get_size(self.max_size)
+end
+
+function BTree.Page:iterate_rows()
+    return coroutine.wrap(function()
+        for _, row in ipairs(self.rows) do
+            coroutine.yield(row)
+        end
+    end)
+end
+
+function BTree.Page:get_row(row_id)
+    local row_index = lib.find(self.rows, function(row)
+        return row.id - row_id
+    end)
+    assert(row_index > 0, "Row was not located in this page")
+    return self.rows[row_index]
 end
 
 return BTree
