@@ -142,6 +142,113 @@ describe("Page", function()
     end)
 
     it("Should split itself into evenly sized pages based on row size", function()
+        local page = Page:new(20, {
+            Row:new(2, {
+                NilCell,
+                NilCell
+            }),
+            Row:new(1, {
+                NilCell,
+                NilCell
+            })
+        })
+
+        local second_page = page:split()
+
+        assert.equal(page:check_row(1), true)
+        assert.equal(page:check_row(2), false)
+        assert.equal(second_page:check_row(2), true)
     end)
 
+    it("Should try to split as evenly as possible even when the row sizes are skewed", function()
+        local page = Page:new(60, {
+            Row:new(1, {
+                NilCell,
+                NilCell,
+                NilCell,
+                NilCell,
+                NilCell,
+                NilCell,
+                NilCell,
+                NilCell,
+                NilCell,
+                NilCell,
+                NilCell
+            }),
+            Row:new(2, {
+                NilCell,
+            }),
+            Row:new(3, {
+                NilCell,
+            }),
+            Row:new(4, {
+                NilCell,
+            })
+        })
+
+        local second_page = page:split()
+
+        assert.equal(second_page:check_row(2), true)
+        assert.equal(second_page:check_row(3), true)
+        assert.equal(second_page:check_row(4), true)
+    end)
+
+    it("The split page should be no larger than the max size allowed", function()
+        local page = Page:new(10, {
+            Row:new(1, {
+                NilCell,
+            }),
+            Row:new(2, {
+                NilCell,
+            }),
+            Row:new(3, {
+                NilCell,
+            }),
+            Row:new(4, {
+                NilCell,
+            })
+        })
+
+        local second_page = page:split()
+
+        assert.equal(second_page:check_row(4), true)
+        assert.equal(second_page:check_row(3), false)
+    end)
+
+    it("There will always be at least one element split even when the size constraint would be violated", function()
+        local page = Page:new(1, {
+            Row:new(1, {
+                NilCell,
+            }),
+            Row:new(2, {
+                NilCell,
+            }),
+        })
+
+        local second_page = page:split()
+
+        assert.equal(second_page:check_row(2), true)
+    end)
+
+    it("Will have the correct page ids after a split", function()
+        local page = Page:new(20, {
+            Row:new(1, {
+                NilCell,
+            }),
+            Row:new(2, {
+                NilCell,
+            }),
+            Row:new(3, {
+                NilCell,
+            }),
+            Row:new(4, {
+                NilCell,
+            })
+        })
+
+        local second_page = page:split()
+
+        assert.equal(page:id(), 2)
+        assert.equal(second_page:id(), 4)
+    end)
 end)

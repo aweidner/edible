@@ -98,6 +98,14 @@ function BTree.Page:new(max_size, rows)
     return new_page
 end
 
+function BTree.Page:id()
+    -- The Page id is the maximum row id.  This makes it
+    -- simpler when constructing a tree of pages to figure
+    -- out which page to navigate to based on the row being
+    -- searched for.
+    return self.rows[#self.rows].id
+end
+
 function BTree.Page:add_row(row)
     -- TODO: Create bisect function and use instead
     -- of inserting the new row and then sorting
@@ -152,12 +160,51 @@ function BTree.Page:should_split()
     return self:size() > self.max_size and #self.rows > 1
 end
 
-function BTree.Page:id()
-    -- The Page id is the maximum row id.  This makes it
-    -- simpler when constructing a tree of pages to figure
-    -- out which page to navigate to based on the row being
-    -- searched for.
-    return self.rows[#self.rows].id
+function BTree.Page:split()
+    -- Split the Page into two pages.
+    --
+    -- The first page will contain all of the original rows except
+    -- those that are split two the second page.
+    --
+    -- The second page will contain rows which have an id strictly
+    -- greater than the last node in the first page (rows will
+    -- be split from the right end).  The size of the second page
+    -- should be no larger than the max size allowed for the page it
+    -- was split from.  The exception to this rule is that there will
+    -- ALWAYS be at least one element split from the first page even
+    -- when that element would violate the size constraint rule.
+    --
+    -- The algorithm will attempt to split rows from the right side
+    -- so that the sizes of both pages are roughly equal at the end
+    -- however the second page may be larger than the first
+    -- page.
+    --
+    -- There is no expectation on the number of rows that will be
+    -- taken for the new page.  The first page may also need to
+    -- be split additional times however this should not be the normal
+    -- operation.
+
+    local moved_rows = {}
+    local moved_rows_size = 0
+    local remaining_rows_size = self:size()
+
+    for i = #self.rows, 2, -1 do
+        local row_size = self.rows[i]:size()
+
+        -- If the total size of the moved rows is greater than that of
+        -- the remaining rows then do not split any more rows
+        if (moved_rows_size >= remaining_rows_size or
+            moved_rows_size >= self.max_size) then
+            break
+        end
+
+        -- Otherwise the row is safe to move.
+        table.insert(moved_rows, 1, table.remove(self.rows, i))
+        moved_rows_size = moved_rows_size + row_size
+        remaining_rows_size = remaining_rows_size - row_size
+    end
+
+    return BTree.Page:new(self.max_size, moved_rows)
 end
 
 return BTree
