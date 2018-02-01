@@ -24,7 +24,7 @@ end
 BTree.Cell = {}
 BTree.Row = {}
 BTree.Page = {}
-BTree.LeafNode = {}
+BTree.Node = {}
 
 function BTree.Cell:new(data)
     -- A cell is the fundamental data container in edible.  Cells are capable of storing
@@ -83,6 +83,10 @@ function BTree.Row:id()
     -- with other "id-ables"
     return self._id
 end
+
+-- In order for page to store something, it must implement the following methods:
+--      :size() - Returns the integer size cost of storing this object in a page
+--      :id() - The identifier for this item used in sorting
 
 function BTree.Page:new(max_size, elements)
     -- A Page is a collection of elements which meet a size constraint supplied in
@@ -213,8 +217,8 @@ function BTree.Page:split()
     return BTree.Page:new(self.max_size, moved_elements)
 end
 
-function BTree.LeafNode:new(page)
-    -- Leaf nodes hold all the actual data in our BTree.  For this purpose,
+function BTree.Node:new(page)
+    -- Nodes hold all the actual data in our BTree.  For this purpose,
     -- they are essentially just wrappers around the Page object
     local new_node = {page = page}
     setmetatable(new_node, self)
@@ -222,23 +226,23 @@ function BTree.LeafNode:new(page)
     return new_node
 end
 
-function BTree.LeafNode:id()
-    -- The leaf node's id is the page's id
+function BTree.Node:id()
+    -- The node's id is the page's id
     return self.page:id()
 end
 
-function BTree.LeafNode:should_split()
-    -- Leaf nodes can only be split if their page can be split
+function BTree.Node:should_split()
+    -- nodes can only be split if their page can be split
     return self.page:should_split()
 end
 
-function BTree.LeafNode:split()
-    -- Splitting a leaf node just means returning the split page wrapped
-    -- in a new leaf node.  Again this leaf node may need to be split itself
-    return BTree.LeafNode:new(self.page:split())
+function BTree.Node:split()
+    -- Splitting a node just means returning the split page wrapped
+    -- in a new node.  Again this node may need to be split itself
+    return BTree.Node:new(self.page:split())
 end
 
-function BTree.LeafNode:visit()
+function BTree.Node:visit()
     -- Provide an iterator to visit all of the elements encapsulated in this node's page
     return coroutine.wrap(function()
         for element in self.page:iterate() do
@@ -247,8 +251,8 @@ function BTree.LeafNode:visit()
     end)
 end
 
-function BTree.LeafNode.size()
-    -- Leaf Nodes are always just their reference.
+function BTree.Node.size()
+    -- Nodes are always just their reference.
     return 8
 end
 

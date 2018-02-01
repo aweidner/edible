@@ -1,13 +1,17 @@
+-- These are test cases to make sure that
+-- a page of nodes (basically what an internal node
+-- wraps) can function correctly
+
 local Page = require('btree').Page
 local Row = require('btree').Row
 local NilCell = require('btree').NilCell
-local LeafNode = require('btree').LeafNode
+local Node = require('btree').Node
 
 describe("Internal Node", function()
 
-    it("Page should be able to store instances of leaf nodes", function()
+    it("Page should be able to store instances of nodes", function()
         local page = Page:new(20, {
-            LeafNode:new(
+            Node:new(
                 Page:new(20, {
                     Row:new(1, {NilCell, NilCell}),
                     Row:new(2, {NilCell, NilCell})
@@ -17,7 +21,7 @@ describe("Internal Node", function()
 
         assert.equal(page:size(), 16)
 
-        page:add(LeafNode:new(
+        page:add(Node:new(
             Page:new(20, {
                 Row:new(1, {NilCell, NilCell}),
                 Row:new(2, {NilCell, NilCell})
@@ -27,33 +31,74 @@ describe("Internal Node", function()
         assert.equal(page:size(), 24)
     end)
 
-    it("Should allow adding new leaf nodes", function()
+    it("Should be able to get a node by id", function()
+        local page = Page:new(1000, {
+            Node:new(
+                Page:new(20, {
+                    Row:new(1, {NilCell, NilCell}),
+                    Row:new(2, {NilCell, NilCell})
+                })
+            ),
+            Node:new(
+                Page:new(20, {
+                    Row:new(3, {NilCell, NilCell}),
+                    Row:new(4, {NilCell, NilCell})
+                })
+            ),
+            Node:new(
+                Page:new(20, {
+                    Row:new(5, {NilCell, NilCell}),
+                    Row:new(6, {NilCell, NilCell})
+                })
+            ),
+            Node:new(
+                Page:new(20, {
+                    Row:new(7, {NilCell, NilCell}),
+                    Row:new(8, {NilCell, NilCell})
+                })
+            )
+        })
+
+        assert.equal(page:get(2):id(), 2)
     end)
 
-    it("Should get the correct id of a page of leaf nodes", function()
+    it("Should iterate through a page of nodes", function()
+        local page = Page:new(1000, {
+            Node:new(
+                Page:new(20, {
+                    Row:new(1, {NilCell, NilCell}),
+                    Row:new(2, {NilCell, NilCell})
+                })
+            ),
+            Node:new(
+                Page:new(20, {
+                    Row:new(3, {NilCell, NilCell}),
+                    Row:new(4, {NilCell, NilCell})
+                })
+            ),
+        })
+
+        -- The reason this is multiplied by two is because each
+        -- node contains a page with two rows.  The id of
+        -- the first node should therefore be two and the id
+        -- of the second should be four
+        local index = 1
+        for node in page:iterate() do
+            assert.equal(node:id(), index * 2)
+            index = index + 1
+        end
     end)
 
-    it("Should iterate through a page of leaf nodes", function()
-    end)
+    it("Should have the correct id", function()
+        local page = Page:new(1000, {
+            Node:new(
+                Page:new(20, {
+                    Row:new(1, {NilCell, NilCell}),
+                    Row:new(2, {NilCell, NilCell})
+                })
+            )
+        })
 
-    it("Should be able to get a certain leaf node by id", function()
+        assert.equals(page:id(), 2)
     end)
-
-    it("Should split a page of leaf nodes correctly", function()
-    end)
-
-    it("Should implement should split on a page of leaf nodes correctly", function()
-    end)
-
-    it("Should be able to get a row by id", function()
-        -- Requires navigating through an internal tree structure
-        -- to get a row by id
-    end)
-
-    it("Should be able to iterate over all of it's rows", function()
-    end)
-
-    it("Should be able to split itself when it grows too large", function()
-    end)
-
 end)

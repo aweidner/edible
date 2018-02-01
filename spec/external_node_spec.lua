@@ -1,16 +1,16 @@
 local Page = require('btree').Page
 local Row = require('btree').Row
 local NilCell = require('btree').NilCell
-local LeafNode = require('btree').LeafNode
+local Node = require('btree').Node
 
-describe("Leaf Node", function()
+describe("Node", function()
     it("Has an id which corresponds to the page id", function()
-        local node = LeafNode:new(Page:new(20, {Row:new(1, {NilCell})}))
+        local node = Node:new(Page:new(20, {Row:new(1, {NilCell})}))
         assert.equal(node:id(), 1)
     end)
 
     it("Knows when it needs to be split based on the page split algorithm", function()
-        local node = LeafNode:new(Page:new(4, {
+        local node = Node:new(Page:new(4, {
             Row:new(1, {NilCell}),
             Row:new(2, {NilCell})
         }))
@@ -19,7 +19,7 @@ describe("Leaf Node", function()
     end)
 
     it("Should allow itself to be split into two leaf nodes", function()
-        local node = LeafNode:new(Page:new(4, {
+        local node = Node:new(Page:new(4, {
             Row:new(1, {NilCell}),
             Row:new(2, {NilCell})
         }))
@@ -33,7 +33,7 @@ describe("Leaf Node", function()
     it("Should be visitable which returns an iterator for rows", function()
         -- We define some invalid row semantics here but it's fine since this
         -- is just for testing
-        local node = LeafNode:new(Page:new(4, {
+        local node = Node:new(Page:new(4, {
             Row:new(1, {NilCell}),
             Row:new(1, {NilCell})
         }))
