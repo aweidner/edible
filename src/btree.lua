@@ -24,6 +24,7 @@ end
 BTree.Cell = {}
 BTree.Row = {}
 BTree.Page = {}
+BTree.LeafNode = {}
 
 function BTree.Cell:new(data)
     -- A cell is the fundamental data container in edible.  Cells are capable of storing
@@ -203,6 +204,40 @@ function BTree.Page:split()
     end
 
     return BTree.Page:new(self.max_size, moved_rows)
+end
+
+function BTree.LeafNode:new(page)
+    -- Leaf nodes hold all the actual data in our BTree.  For this purpose,
+    -- they are essentially just wrappers around the Page object
+    local new_node = {page = page}
+    setmetatable(new_node, self)
+    self.__index = self
+    return new_node
+end
+
+function BTree.LeafNode:id()
+    -- The leaf node's id is the page's id
+    return self.page:id()
+end
+
+function BTree.LeafNode:should_split()
+    -- Leaf nodes can only be split if their page can be split
+    return self.page:should_split()
+end
+
+function BTree.LeafNode:split()
+    -- Splitting a leaf node just means returning the split page wrapped
+    -- in a new leaf node.  Again this leaf node may need to be split itself
+    return BTree.LeafNode:new(self.page:split())
+end
+
+function BTree.LeafNode:visit()
+    -- Provide an iterator to visit all of the rows encapsulated in this node's page
+    return coroutine.wrap(function()
+        for i = 1, #self.page.rows do
+            coroutine.yield(self.page.rows[i])
+        end
+    end)
 end
 
 return BTree
