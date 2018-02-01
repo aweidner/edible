@@ -11,7 +11,7 @@ local function find_recursive(array, comparator, first, last, index_to_comparato
     --      * zero, indicating the number is at this position
     --
     --  Arguments:
-    --      * array - The array to search through
+    --      * array - The array to search through, expected to be sorted
     --      * comparator - The function to use to compare elements
     --      * first - The index in the list to start the search
     --      * last - The last index allowable in the search
@@ -38,13 +38,24 @@ local function find_recursive(array, comparator, first, last, index_to_comparato
     end
 end
 
-local function bisect(array, value)
+local function bisect(array, value, extractor)
     -- Implements bisect right, an algorithm to find the index
     -- to insert a value to keep the array in sorted order
+    --
+    -- Arguments:
+    --      * array - Array to search through, expected to be sorted
+    --      * value - The value to insert into the array
+    --      * extractor - Optional.  If extractor is defined it must be a
+    --          function.  Extractor will be called with each element of
+    --          the array being compared.  It should return the value to
+    --          compare against
 
     -- Special case for bisect right: If we need to insert before the first
     -- element then handle it here
-    if #array == 0 or value < array[1] then
+
+    extractor = extractor or function(x) return x end
+
+    if #array == 0 or value < extractor(array[1]) then
         return 1
     end
 
@@ -67,9 +78,9 @@ local function bisect(array, value)
 
         if left < 1 or right > #array then
             return 0
-        elseif array[left] < value and array[right] < value then
+        elseif extractor(array[left]) < value and extractor(array[right]) < value then
             return 1
-        elseif array[left] > value and array[right] > value then
+        elseif extractor(array[left]) > value and extractor(array[right]) > value then
             return -1
         else
             return 0

@@ -107,12 +107,10 @@ function BTree.Page:id()
 end
 
 function BTree.Page:add_row(row)
-    -- TODO: Create bisect function and use instead
-    -- of inserting the new row and then sorting
-    table.insert(self.rows, row)
-    table.sort(self.rows, function(a, b)
-        return a.id < b.id
-    end)
+    -- Add a new row at the appropriate position based on row id
+    table.insert(self.rows, lib.bisect(self.rows, row.id, function(compare_row)
+        return compare_row.id
+    end), row)
 end
 
 function BTree.Page:size()
