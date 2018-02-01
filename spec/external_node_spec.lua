@@ -39,7 +39,7 @@ describe("Leaf Node", function()
         }))
 
         for row in node:visit() do
-            assert.equal(row.id, 1)
+            assert.equal(row:id(), 1)
         end
     end)
 end)

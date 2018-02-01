@@ -56,7 +56,7 @@ function BTree.Row:new(row_id, cells)
     assert(type(row_id) == "number", "Row ID must be a number")
     assert(row_id > 0, "Row ID must be greater than 0")
 
-    local new_row = {cells = cells or {}, id = row_id}
+    local new_row = {cells = cells or {}, _id = row_id}
 
     setmetatable(new_row, self)
     self.__index = self
@@ -75,11 +75,17 @@ function BTree.Row:size()
         for _, cell in ipairs(self.cells) do
             coroutine.yield(cell.size)
         end
-    end)) + get_size(self.id)
+    end)) + get_size(self._id)
 end
 
-function BTree.Page:new(max_size, rows)
-    -- A Page is a collection of rows which meet a size constraint supplied in
+function BTree.Row:id()
+    -- Implemented as a function for consistency of interface
+    -- with other "id-ables"
+    return self._id
+end
+
+function BTree.Page:new(max_size, elements)
+    -- A Page is a collection of elements which meet a size constraint supplied in
     -- `max_size`.  A page will not be split when it is over the maximum size,
     -- and will continue adding data to it.  Users of `Page` should
     -- regularly call `should_split` to see if the Page can now be split.  If
@@ -89,62 +95,62 @@ function BTree.Page:new(max_size, rows)
     -- Rows are kept in sorted order within a page. Rows will be sorted upon being
     -- supplied to a page if they are not already sorted.
 
-    table.sort(rows, function(a, b)
-        return a.id < b.id
+    table.sort(elements, function(a, b)
+        return a:id() < b:id()
     end)
 
-    local new_page = {max_size = max_size, rows = rows or {}}
+    local new_page = {max_size = max_size, elements = elements or {}}
     setmetatable(new_page, self)
     self.__index = self
     return new_page
 end
 
 function BTree.Page:id()
-    -- The Page id is the maximum row id.  This makes it
+    -- The Page id is the maximum element id.  This makes it
     -- simpler when constructing a tree of pages to figure
-    -- out which page to navigate to based on the row being
+    -- out which page to navigate to based on the element being
     -- searched for.
-    return self.rows[#self.rows].id
+    return self.elements[#self.elements]:id()
 end
 
-function BTree.Page:add_row(row)
-    -- Add a new row at the appropriate position based on row id
-    table.insert(self.rows, lib.bisect(self.rows, row.id, function(compare_row)
-        return compare_row.id
-    end), row)
+function BTree.Page:add(element)
+    -- Add a new element at the appropriate position based on element_id
+    table.insert(self.elements, lib.bisect(self.elements, element:id(), function(compare)
+        return compare:id()
+    end), element)
 end
 
 function BTree.Page:size()
     -- Return the total size of this page in memory
     return lib.sum(coroutine.wrap(function()
-        for _, row in ipairs(self.rows) do
-            coroutine.yield(row:size())
+        for _, element in ipairs(self.elements) do
+            coroutine.yield(element:size())
         end
     end)) + get_size(self.max_size)
 end
 
-function BTree.Page:iterate_rows()
-    -- Iterate through all the rows in order
+function BTree.Page:iterate()
+    -- Iterate through all the elements in order
     return coroutine.wrap(function()
-        for _, row in ipairs(self.rows) do
-            coroutine.yield(row)
+        for _, element in ipairs(self.elements) do
+            coroutine.yield(element)
         end
     end)
 end
 
-function BTree.Page:get_row(row_id)
-    -- Returns the row with the given row_id if it exists in this page.
-    -- If the row does not exist in this page an error will be returned
-    local row_index = lib.find(self.rows, function(row)
-        return row_id - row.id
+function BTree.Page:get(element_id)
+    -- Returns the element with the given `element_id` if it exists in this page.
+    -- If the elements does not exist in this page an error will be returned
+    local element_index = lib.find(self.elements, function(element)
+        return element_id - element:id()
     end)
-    assert(row_index > 0, "Row was not located in this page")
-    return self.rows[row_index]
+    assert(element_index > 0, "Row was not located in this page")
+    return self.elements[element_index]
 end
 
-function BTree.Page:check_row(row_id)
-    -- Check to see if the given row is in this page
-    if pcall(function() self:get_row(row_id) end) then
+function BTree.Page:check(element_id)
+    -- Check to see if the given elements is in this page
+    if pcall(function() self:get(element_id) end) then
         return true
     else
         return false
@@ -153,57 +159,58 @@ end
 
 function BTree.Page:should_split()
     -- Determine if the page should be split.  Pages must be split
-    -- when they contain more than one row AND their size is greater
-    -- than the maximum size.  A page with only one row cannot be split
-    -- since rows are indivisible.
-    return self:size() > self.max_size and #self.rows > 1
+    -- when they contain more than one element AND their size is greater
+    -- than the maximum size.  A page with only one element cannot be split
+    -- since element are indivisible.
+    return self:size() > self.max_size and #self.elements > 1
 end
 
 function BTree.Page:split()
     -- Split the Page into two pages.
     --
-    -- The first page will contain all of the original rows except
+    -- The first page will contain all of the original elements except
     -- those that are split two the second page.
     --
-    -- The second page will contain rows which have an id strictly
-    -- greater than the last node in the first page (rows will
+    -- The second page will contain elements which have an id strictly
+    -- greater than the last node in the first page (elements will
     -- be split from the right end).  The size of the second page
     -- should be no larger than the max size allowed for the page it
     -- was split from.  The exception to this rule is that there will
     -- ALWAYS be at least one element split from the first page even
     -- when that element would violate the size constraint rule.
     --
-    -- The algorithm will attempt to split rows from the right side
+    -- The algorithm will attempt to split elements from the right side
     -- so that the sizes of both pages are roughly equal at the end
     -- however the second page may be larger than the first
     -- page.
     --
-    -- There is no expectation on the number of rows that will be
+    -- There is no expectation on the number of elements that will be
     -- taken for the new page.  The first page may also need to
     -- be split additional times however this should not be the normal
     -- operation.
+    assert(self:should_split(), "Page cannot be split")
 
-    local moved_rows = {}
-    local moved_rows_size = 0
-    local remaining_rows_size = self:size()
+    local moved_elements = {}
+    local moved_elements_size = 0
+    local remaining_elements_size = self:size()
 
-    for i = #self.rows, 2, -1 do
-        local row_size = self.rows[i]:size()
+    for i = #self.elements, 2, -1 do
+        local element_size = self.elements[i]:size()
 
-        -- If the total size of the moved rows is greater than that of
-        -- the remaining rows then do not split any more rows
-        if (moved_rows_size >= remaining_rows_size or
-            moved_rows_size >= self.max_size) then
+        -- If the total size of the moved elements is greater than that of
+        -- the remaining elements then do not split any more elements
+        if (moved_elements_size >= remaining_elements_size or
+            moved_elements_size >= self.max_size) then
             break
         end
 
-        -- Otherwise the row is safe to move.
-        table.insert(moved_rows, 1, table.remove(self.rows, i))
-        moved_rows_size = moved_rows_size + row_size
-        remaining_rows_size = remaining_rows_size - row_size
+        -- Otherwise the element is safe to move.
+        table.insert(moved_elements, 1, table.remove(self.elements, i))
+        moved_elements_size = moved_elements_size + element_size
+        remaining_elements_size = remaining_elements_size - element_size
     end
 
-    return BTree.Page:new(self.max_size, moved_rows)
+    return BTree.Page:new(self.max_size, moved_elements)
 end
 
 function BTree.LeafNode:new(page)
@@ -232,12 +239,17 @@ function BTree.LeafNode:split()
 end
 
 function BTree.LeafNode:visit()
-    -- Provide an iterator to visit all of the rows encapsulated in this node's page
+    -- Provide an iterator to visit all of the elements encapsulated in this node's page
     return coroutine.wrap(function()
-        for i = 1, #self.page.rows do
-            coroutine.yield(self.page.rows[i])
+        for element in self.page:iterate() do
+            coroutine.yield(element)
         end
     end)
+end
+
+function BTree.LeafNode.size()
+    -- Leaf Nodes are always just their reference.
+    return 8
 end
 
 return BTree

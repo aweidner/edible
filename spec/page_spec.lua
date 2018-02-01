@@ -29,7 +29,7 @@ describe("Page", function()
             })
         })
 
-        for row in page:iterate_rows() do
+        for row in page:iterate() do
             assert.equal(row:get(1).size, 8)
             assert.equal(row:get(2).size, 8)
         end
@@ -47,8 +47,8 @@ describe("Page", function()
             })
         })
 
-        assert.equal(page.rows[1].id, 1)
-        assert.equal(page.rows[2].id, 2)
+        assert.equal(page.elements[1]:id(), 1)
+        assert.equal(page.elements[2]:id(), 2)
     end)
 
     it("Should be able to get a row by id", function()
@@ -63,7 +63,7 @@ describe("Page", function()
             })
         })
 
-        assert.equal(page:get_row(2).id, 2)
+        assert.equal(page:get(2):id(), 2)
     end)
 
     it("If there is no row matching the id it should throw an exception", function()
@@ -78,7 +78,7 @@ describe("Page", function()
             })
         })
 
-        assert.has.errors(function() page:get_row(27) end)
+        assert.has.errors(function() page:get(27) end)
     end)
 
     it("Should allow checking if a certain id exists in a row", function()
@@ -92,8 +92,8 @@ describe("Page", function()
                 NilCell
             })
         })
-        assert.equal(page:check_row(27), false)
-        assert.equal(page:check_row(1), true)
+        assert.equal(page:check(27), false)
+        assert.equal(page:check(1), true)
     end)
 
     it("Should have a max size", function()
@@ -121,9 +121,9 @@ describe("Page", function()
 
     it("Should accept new rows that can be added to it", function()
         local page = Page:new(40, {})
-        page:add_row(Row:new(1, {}))
+        page:add(Row:new(1, {}))
 
-        assert.equal(page:get_row(1).id, 1)
+        assert.equal(page:get(1):id(), 1)
     end)
 
     it("Should not indicate it can be split if it only has one row", function()
@@ -134,10 +134,10 @@ describe("Page", function()
 
     it("Should have an id which is the greatest row id", function()
         local page = Page:new(40, {})
-        page:add_row(Row:new(1, {}))
+        page:add(Row:new(1, {}))
         assert.equal(page:id(), 1)
 
-        page:add_row(Row:new(3, {}))
+        page:add(Row:new(3, {}))
         assert.equal(page:id(), 3)
     end)
 
@@ -155,9 +155,9 @@ describe("Page", function()
 
         local second_page = page:split()
 
-        assert.equal(page:check_row(1), true)
-        assert.equal(page:check_row(2), false)
-        assert.equal(second_page:check_row(2), true)
+        assert.equal(page:check(1), true)
+        assert.equal(page:check(2), false)
+        assert.equal(second_page:check(2), true)
     end)
 
     it("Should try to split as evenly as possible even when the row sizes are skewed", function()
@@ -188,9 +188,9 @@ describe("Page", function()
 
         local second_page = page:split()
 
-        assert.equal(second_page:check_row(2), true)
-        assert.equal(second_page:check_row(3), true)
-        assert.equal(second_page:check_row(4), true)
+        assert.equal(second_page:check(2), true)
+        assert.equal(second_page:check(3), true)
+        assert.equal(second_page:check(4), true)
     end)
 
     it("The split page should be no larger than the max size allowed", function()
@@ -211,8 +211,8 @@ describe("Page", function()
 
         local second_page = page:split()
 
-        assert.equal(second_page:check_row(4), true)
-        assert.equal(second_page:check_row(3), false)
+        assert.equal(second_page:check(4), true)
+        assert.equal(second_page:check(3), false)
     end)
 
     it("There will always be at least one element split even when the size constraint would be violated", function()
@@ -227,7 +227,7 @@ describe("Page", function()
 
         local second_page = page:split()
 
-        assert.equal(second_page:check_row(2), true)
+        assert.equal(second_page:check(2), true)
     end)
 
     it("Will have the correct page ids after a split", function()
@@ -250,5 +250,31 @@ describe("Page", function()
 
         assert.equal(page:id(), 2)
         assert.equal(second_page:id(), 4)
+    end)
+
+    it("Should throw an error when spliting a page that cannot be split", function()
+        local page = Page:new(10, {
+            Row:new(1, {
+                NilCell,
+            }),
+        })
+
+        assert.has.errors(function() page:split() end)
+    end)
+
+    it("Should be able to get the size after insert", function()
+        local page = Page:new(20, {
+            Row:new(1, {
+                NilCell,
+            })
+        })
+
+        assert.equal(page:size(), 24)
+
+        page:add(Row:new(2, {
+            NilCell,
+        }))
+
+        assert.equal(page:size(), 40)
     end)
 end)
