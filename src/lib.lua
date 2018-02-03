@@ -39,7 +39,7 @@ local function find_recursive(array, comparator, first, last, index_to_comparato
 end
 
 local function bisect(array, value, extractor)
-    -- Implements bisect right, an algorithm to find the index
+    -- Implements bisect left, an algorithm to find the index
     -- to insert a value to keep the array in sorted order
     --
     -- Arguments:
@@ -50,42 +50,56 @@ local function bisect(array, value, extractor)
     --          the array being compared.  It should return the value to
     --          compare against
 
-    -- Special case for bisect right: If we need to insert before the first
-    -- element then handle it here
-
     extractor = extractor or function(x) return x end
 
-    if #array == 0 or value < extractor(array[1]) then
+    -- Special case for empty arrays, insert at position 1
+    if #array == 0 then
         return 1
     end
 
-    -- Perform a binary search with a special comparator.  The comparator
-    -- compares the left and right values in the array against the value
-    -- we are searching for.
-    --
-    -- If both left and right are less than the current value then we need
-    -- to go more rightward (greater values)
-    --
-    -- If both left and right are greater than the current value than we
-    -- need to go more leftward (lesser values)
-    --
-    -- When we hit a middle point then we have found the position to insert.
-    -- Because this is bisect right, we add one to the resulting index to
-    -- get the insert position usable by table.insert
-    return find_recursive(array, function(comparison_index)
-        local left = comparison_index - 1
-        local right = comparison_index + 1
+    -- Special case for when we need to insert this element at the end of the list
+    if value <= extractor(array[1]) then
+        return 1
+    end
 
-        if left < 1 or right > #array then
-            return 0
-        elseif extractor(array[left]) < value and extractor(array[right]) < value then
-            return 1
-        elseif extractor(array[left]) > value and extractor(array[right]) > value then
-            return -1
-        else
-            return 0
+    -- Special case for when we need to insert this element at the end of the list
+    if value >= extractor(array[#array]) then
+        return #array + 1
+    end
+
+    -- The special cases above are there to correct some deficiencies in
+    -- binary search.  If we are searching in an array it will only allow us
+    -- to compare within indicies in the array.  Technically we also want to
+    -- compare on the extreme ends (positions not actually in the array) to see
+    -- if values are supposed to be inserted there.  Since we can't do that with
+    -- a conventional search, take care of the caps by special case.
+
+    return find_recursive(array, function(comparison_index)
+        local value_at_current_index = extractor(array[comparison_index])
+
+        -- This is for convenience, we say that the left end of the
+        -- array is always bounded by negative infinity.  If the left
+        -- index is still "within" the array, then we can retrieve the
+        -- actual left value
+        local value_at_left_index = -math.huge
+        if comparison_index - 1 > 0 then
+            value_at_left_index = extractor(array[comparison_index - 1])
         end
-    end, 1, #array, true) + 1
+
+        -- In order for this to be the correct position, the value we are attempting
+        -- to insert must be between the current and left indicies.  It will then
+        -- be inserted on the LEFT of the current index
+        --
+        -- If it is not between the current and left indicies than we need to keep
+        -- searching, we therefore do the normal binary search operations
+        if value_at_left_index <= value and value <= value_at_current_index then
+            return 0
+        elseif value_at_current_index > value then
+            return -1
+        elseif value_at_current_index < value then
+            return 1
+        end
+    end, 1, #array, true)
 end
 
 return {
@@ -105,4 +119,5 @@ return {
     end,
 
     bisect = bisect
+
 }

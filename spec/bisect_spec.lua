@@ -2,11 +2,11 @@ local bisect = require("lib").bisect
 
 describe("Bisect", function()
     it("Should find the location to insert an element when elements are all equal", function()
-        assert.equal(bisect({17, 17, 17, 17}, 17), 3)
+        assert.equal(bisect({17, 17, 17, 17}, 17), 1)
     end)
 
     it("Should find the location to insert an element when elements are very close", function()
-        assert.equal(bisect({17, 18, 19, 20}, 18), 3)
+        assert.equal(bisect({17, 18, 19, 20}, 18), 2)
     end)
 
     it("Should find the location to insert an element in an empty list", function()

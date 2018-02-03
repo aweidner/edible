@@ -99,9 +99,11 @@ function BTree.Page:new(max_size, elements)
     -- Rows are kept in sorted order within a page. Rows will be sorted upon being
     -- supplied to a page if they are not already sorted.
 
-    table.sort(elements, function(a, b)
-        return a:id() < b:id()
-    end)
+    if elements then
+        table.sort(elements, function(a, b)
+            return a:id() < b:id()
+        end)
+    end
 
     local new_page = {max_size = max_size, elements = elements or {}}
     setmetatable(new_page, self)
@@ -217,6 +219,26 @@ function BTree.Page:split()
     return BTree.Page:new(self.max_size, moved_elements)
 end
 
+BTree.NodePage = BTree.Page:new()
+
+function BTree.NodePage:get(element_id)
+    -- A Node Page is a page of nodes.  We need to do this because unlike a
+    -- page that holds rows, a Node page needs to do a bisect when searching
+    -- for a given row id
+    local index = lib.bisect(self.elements, element_id, function(compare)
+        return compare:id()
+    end)
+
+    -- Special case for bisect, if it would return a position
+    -- greater than the end of the list, we return from the
+    -- last element in the list of elements instead
+    if index > #self.elements then
+        index = #self.elements
+    end
+
+    return self.elements[index]:get(element_id)
+end
+
 function BTree.Node:new(page)
     -- Nodes hold all the actual data in our BTree.  For this purpose,
     -- they are essentially just wrappers around the Page object
@@ -249,6 +271,10 @@ function BTree.Node:visit()
             coroutine.yield(element)
         end
     end)
+end
+
+function BTree.Node:get(element_id)
+    return self.page:get(element_id)
 end
 
 function BTree.Node.size()

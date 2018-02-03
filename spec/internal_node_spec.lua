@@ -3,6 +3,7 @@
 -- wraps) can function correctly
 
 local Page = require('btree').Page
+local NodePage = require('btree').NodePage
 local Row = require('btree').Row
 local NilCell = require('btree').NilCell
 local Node = require('btree').Node
@@ -10,7 +11,7 @@ local Node = require('btree').Node
 describe("Internal Node", function()
 
     it("Page should be able to store instances of nodes", function()
-        local page = Page:new(20, {
+        local page = NodePage:new(20, {
             Node:new(
                 Page:new(20, {
                     Row:new(1, {NilCell, NilCell}),
@@ -32,7 +33,7 @@ describe("Internal Node", function()
     end)
 
     it("Should be able to get a node by id", function()
-        local page = Page:new(1000, {
+        local page = NodePage:new(1000, {
             Node:new(
                 Page:new(20, {
                     Row:new(1, {NilCell, NilCell}),
@@ -63,7 +64,7 @@ describe("Internal Node", function()
     end)
 
     it("Should iterate through a page of nodes", function()
-        local page = Page:new(1000, {
+        local page = NodePage:new(1000, {
             Node:new(
                 Page:new(20, {
                     Row:new(1, {NilCell, NilCell}),
@@ -90,7 +91,7 @@ describe("Internal Node", function()
     end)
 
     it("Should have the correct id", function()
-        local page = Page:new(1000, {
+        local page = NodePage:new(1000, {
             Node:new(
                 Page:new(20, {
                     Row:new(1, {NilCell, NilCell}),
@@ -100,5 +101,57 @@ describe("Internal Node", function()
         })
 
         assert.equals(page:id(), 2)
+    end)
+
+    it("Should be able to get a row by id at multiple levels", function()
+        local page = NodePage:new(1000, {
+            Node:new(
+                Page:new(20, {
+                    Row:new(1, {NilCell, NilCell}),
+                    Row:new(2, {NilCell, NilCell})
+                })
+            ),
+            Node:new(
+                Page:new(20, {
+                    Row:new(3, {NilCell, NilCell}),
+                    Row:new(4, {NilCell, NilCell})
+                })
+            ),
+        })
+
+        assert.equals(page:get(3):id(), 3)
+        assert.has.error(function() page:get(10):id() end)
+    end)
+
+    it("Should be able to get a node by id at the end of a list", function()
+        local page = NodePage:new(1000, {
+            Node:new(
+                Page:new(20, {
+                    Row:new(1, {NilCell, NilCell}),
+                    Row:new(2, {NilCell, NilCell})
+                })
+            ),
+            Node:new(
+                Page:new(20, {
+                    Row:new(3, {NilCell, NilCell}),
+                    Row:new(4, {NilCell, NilCell})
+                })
+            ),
+            Node:new(
+                Page:new(20, {
+                    Row:new(5, {NilCell, NilCell}),
+                    Row:new(6, {NilCell, NilCell})
+                })
+            ),
+            Node:new(
+                Page:new(20, {
+                    Row:new(7, {NilCell, NilCell}),
+                    Row:new(8, {NilCell, NilCell})
+                })
+            )
+        })
+
+        assert.equal(page:get(8):id(), 8)
+        assert.equal(page:get(7):id(), 7)
     end)
 end)
