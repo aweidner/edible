@@ -21,15 +21,6 @@ describe("Internal Node", function()
         })
 
         assert.equal(page:size(), 16)
-
-        page:add(Node:new(
-            Page:new(20, {
-                Row:new(1, {NilCell, NilCell}),
-                Row:new(2, {NilCell, NilCell})
-            })
-        ))
-
-        assert.equal(page:size(), 24)
     end)
 
     it("Should be able to get a node by id", function()

@@ -25,6 +25,7 @@ BTree.Cell = {}
 BTree.Row = {}
 BTree.Page = {}
 BTree.Node = {}
+BTree.BTree = {}
 
 function BTree.Cell:new(data)
     -- A cell is the fundamental data container in edible.  Cells are capable of storing
@@ -239,6 +240,30 @@ function BTree.NodePage:get(element_id)
     return self.elements[index]:get(element_id)
 end
 
+function BTree.NodePage:add(row)
+    -- Do a bisect of children to find out which node needs to
+    -- have this added to
+    local index = lib.bisect(self.elements, row:id(), function(compare)
+        return compare:id()
+    end)
+
+    local node_to_add_to
+
+    -- Special case for empty node in the beginning
+    if #self.elements == 0 then
+        table.insert(self.elements, BTree.Node:new(BTree.Page:new(self.max_size)))
+        node_to_add_to = self.elements[1]
+    -- Special case for adding to the end node, add to the last page
+    elseif index > #self.elements then
+        node_to_add_to = self.elements[#self.elements]
+    -- And the usual case, add to the index that we found
+    else
+        node_to_add_to = self.elements[index]
+    end
+
+    node_to_add_to:add(row)
+end
+
 function BTree.Node:new(page)
     -- Nodes hold all the actual data in our BTree.  For this purpose,
     -- they are essentially just wrappers around the Page object
@@ -277,9 +302,38 @@ function BTree.Node:get(element_id)
     return self.page:get(element_id)
 end
 
+function BTree.Node:add(row)
+    self.page:add(row)
+
+    -- TODO: Need logic for splitting the page here
+end
+
 function BTree.Node.size()
     -- Nodes are always just their reference.
     return 8
+end
+
+function BTree.BTree:new(page_size)
+    local new_tree = {page_size = page_size}
+    setmetatable(new_tree, self)
+    self.__index = self
+    return new_tree
+end
+
+function BTree.BTree:insert(row)
+    -- Add a new node as the root if we don't have one
+    if self.root == nil then
+        self.root = BTree.Node:new(BTree.NodePage:new(self.page_size))
+    end
+
+    self.root:add(row)
+
+    -- TODO: Add code for handling when the root needs to be split
+end
+
+function BTree.BTree:select(row_id)
+    -- Select is just a get from the root
+    return self.root:get(row_id)
 end
 
 return BTree
