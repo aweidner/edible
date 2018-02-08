@@ -121,4 +121,35 @@ describe("BTree", function()
         end
     end)
 
+    it("Should be able to deal with random insertions and hold order", function()
+        local tree = BTree:new(256)
+        local indexes = {}
+
+        -- Generate 100 unique indexes for rows
+        for i = 1, 100 do
+            table.insert(indexes, i)
+        end
+
+        -- Shuffle them
+        for i = #indexes, 1, -1 do
+            local j = math.random(1, #indexes)
+            local temp = indexes[i]
+            indexes[i] = indexes[j]
+            indexes[j] = temp
+        end
+
+        -- Insert them
+        for i = 1, #indexes do
+            tree:insert(Row:new(indexes[i], {Cell:new(i)}))
+        end
+
+        -- Assert that the ids should be in sorted order
+        -- when we iterate over them
+        local previous_value = 0
+        for value in tree:iterate() do
+            assert.equal(previous_value < value:id(), true)
+            previous_value = value:id()
+        end
+
+    end)
 end)
