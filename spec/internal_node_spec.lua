@@ -145,4 +145,25 @@ describe("Internal Node", function()
         assert.equal(page:get(8):id(), 8)
         assert.equal(page:get(7):id(), 7)
     end)
+
+    it("Should be able to tell when to split the page", function()
+        local page = NodePage:new(24)
+        assert.equals(page:size(), 8)
+
+        -- Now we are going to add one Node with a Page to it
+
+        page:add(Row:new(1, {NilCell}))
+        assert.equals(page:size(), 16)
+        assert.equals(page:should_split(), false)
+
+        -- The page does not yet need to be split.  We add another node
+        page:add(Row:new(2, {NilCell}))
+        assert.equals(page:size(), 24)
+        assert.equals(page:should_split(), false)
+
+        -- Now the page itself needs to be split
+        page:add(Row:new(3, {NilCell}))
+        assert.equals(page:size(), 32)
+        assert.equals(page:should_split(), true)
+    end)
 end)

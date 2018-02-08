@@ -173,6 +173,10 @@ function BTree.Page:should_split()
 end
 
 function BTree.Page:split()
+    return BTree.Page:new(self.max_size, self:internal_split())
+end
+
+function BTree.Page:internal_split()
     -- Split the Page into two pages.
     --
     -- The first page will contain all of the original elements except
@@ -217,8 +221,9 @@ function BTree.Page:split()
         remaining_elements_size = remaining_elements_size - element_size
     end
 
-    return BTree.Page:new(self.max_size, moved_elements)
+    return moved_elements
 end
+
 
 BTree.NodePage = BTree.Page:new()
 
@@ -262,6 +267,17 @@ function BTree.NodePage:add(row)
     end
 
     node_to_add_to:add(row)
+
+    if node_to_add_to:should_split() then
+        local new_node = node_to_add_to:split()
+        table.insert(self.elements, lib.bisect(self.elements, new_node:id(), function(compare)
+            return compare:id()
+        end), new_node)
+    end
+end
+
+function BTree.NodePage:split()
+    return BTree.NodePage:new(self.max_size, self:internal_split())
 end
 
 function BTree.Node:new(page)
@@ -328,7 +344,11 @@ function BTree.BTree:insert(row)
 
     self.root:add(row)
 
-    -- TODO: Add code for handling when the root needs to be split
+    if self.root:should_split() then
+        self.root = BTree.Node:new(BTree.NodePage:new(self.page_size, {
+            self.root, self.root:split()
+        }))
+    end
 end
 
 function BTree.BTree:select(row_id)
