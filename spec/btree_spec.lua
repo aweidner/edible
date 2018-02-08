@@ -152,4 +152,16 @@ describe("BTree", function()
         end
 
     end)
+
+    it("Should be able to store unicode strings along with integers", function()
+        local tree = BTree:new(256)
+
+        tree:insert(Row:new(1, {Cell:new(34), Cell:new("Some string  ओ औ ")}))
+        tree:insert(Row:new(2, {Cell:new(34), Cell:new("Some string  ओ औ ")}))
+        tree:insert(Row:new(3, {Cell:new(34), Cell:new("Some string  ओ औ ")}))
+        tree:insert(Row:new(4, {Cell:new(34), Cell:new("Some string  ओ औ ")}))
+        tree:insert(Row:new(5, {Cell:new(34), Cell:new("Some string  ओ औ ")}))
+
+        assert.equal(tree:select(3):get(2).data, "Some string  ओ औ ")
+    end)
 end)

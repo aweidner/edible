@@ -32,9 +32,9 @@ The second phase focuses on optimizations and adding features to make working wi
 
 ## Phase 1
 
-- [ ] Create a tree structure to hold data
-- [ ] Add the integer data type (32 bit only)
-- [ ] Add the string data type (UTF-8)
+- [x] Create a tree structure to hold data
+- [x] Add the integer data type (32 bit only)
+- [x] Add the string data type (UTF-8)
 
 At this point I should be able to store string and integer data into the tree structure and retrieve it.  No indexing
 or anything yet, basically just a tree straight out of a Data Structures textbook.
