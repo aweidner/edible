@@ -107,4 +107,18 @@ describe("BTree", function()
         end
 
     end)
+
+    it("Should be able to iterate over every value", function()
+        local tree = BTree:new(256)
+        for i = 1, 50 do
+            tree:insert(Row:new(i, {Cell:new(i)}))
+        end
+
+        local expected_value = 1
+        for value in tree:iterate() do
+            assert.equal(value:get(1).data, expected_value)
+            expected_value = expected_value + 1
+        end
+    end)
+
 end)

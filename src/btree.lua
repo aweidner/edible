@@ -270,14 +270,28 @@ function BTree.NodePage:add(row)
 
     if node_to_add_to:should_split() then
         local new_node = node_to_add_to:split()
-        table.insert(self.elements, lib.bisect(self.elements, new_node:id(), function(compare)
+        local insert_index = lib.bisect(self.elements, new_node:id(), function(compare)
             return compare:id()
-        end), new_node)
+        end)
+        table.insert(self.elements, insert_index, new_node)
     end
 end
 
 function BTree.NodePage:split()
     return BTree.NodePage:new(self.max_size, self:internal_split())
+end
+
+function BTree.NodePage:iterate()
+    -- Node pages do not yield their own nodes, they yield
+    -- from the iterators of their children.  This is to facilitate
+    -- traversing the entire tree
+    return coroutine.wrap(function()
+        for _, element in pairs(self.elements) do
+            for value in element:iterate() do
+                coroutine.yield(value)
+            end
+        end
+    end)
 end
 
 function BTree.Node:new(page)
@@ -320,13 +334,21 @@ end
 
 function BTree.Node:add(row)
     self.page:add(row)
-
-    -- TODO: Need logic for splitting the page here
 end
 
 function BTree.Node.size()
     -- Nodes are always just their reference.
     return 8
+end
+
+function BTree.Node:iterate()
+    -- Iteration of a node means to yield from the iteration
+    -- of the page
+    return coroutine.wrap(function()
+        for value in self.page:iterate() do
+            coroutine.yield(value)
+        end
+    end)
 end
 
 function BTree.BTree:new(page_size)
@@ -354,6 +376,16 @@ end
 function BTree.BTree:select(row_id)
     -- Select is just a get from the root
     return self.root:get(row_id)
+end
+
+function BTree.BTree:iterate()
+    -- Iteration on a tree means we need to iterate
+    -- through the root and all its children
+    return coroutine.wrap(function()
+        for value in self.root:iterate() do
+            coroutine.yield(value)
+        end
+    end)
 end
 
 return BTree

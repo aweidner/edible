@@ -26,9 +26,22 @@ local function benchmark(title, f, parameters)
     end
 end
 
+local function noop() end
+
 benchmark("Insert 100000 integers (one cell rows)", function(page_size)
     local tree = BTree:new(page_size)
     for i = 1, 100000 do
         tree:insert(Row:new(i, {Cell:new(i)}))
     end
 end, {{64}, {128}, {256}, {512}, {1024}, {2048}})
+
+
+-- Set up a traversal benchmark
+local tree_for_traversal_benchmark = BTree:new(256)
+for i = 1, 100000 do
+    tree_for_traversal_benchmark:insert(Row:new(i, {Cell:new(i)}))
+end
+
+benchmark("Traverse a 100000 row tree", function()
+    for row in tree_for_traversal_benchmark:iterate() do noop(row) end
+end, {{}})

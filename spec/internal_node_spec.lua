@@ -54,33 +54,6 @@ describe("Internal Node", function()
         assert.equal(page:get(2):id(), 2)
     end)
 
-    it("Should iterate through a page of nodes", function()
-        local page = NodePage:new(1000, {
-            Node:new(
-                Page:new(20, {
-                    Row:new(1, {NilCell, NilCell}),
-                    Row:new(2, {NilCell, NilCell})
-                })
-            ),
-            Node:new(
-                Page:new(20, {
-                    Row:new(3, {NilCell, NilCell}),
-                    Row:new(4, {NilCell, NilCell})
-                })
-            ),
-        })
-
-        -- The reason this is multiplied by two is because each
-        -- node contains a page with two rows.  The id of
-        -- the first node should therefore be two and the id
-        -- of the second should be four
-        local index = 1
-        for node in page:iterate() do
-            assert.equal(node:id(), index * 2)
-            index = index + 1
-        end
-    end)
-
     it("Should have the correct id", function()
         local page = NodePage:new(1000, {
             Node:new(
