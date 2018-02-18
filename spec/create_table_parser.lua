@@ -4,6 +4,8 @@ local anyOf = require("parser").anyOf
 local compose = require("parser").compose
 local types = require("parser").types
 local column_def = require("parser").column_def
+local oneOrMoreOf = require("parser").oneOrMoreOf
+local create_table = require("parser").create_table
 
 describe("Match Pattern", function()
     it("Should be able to parse the text create table", function()
@@ -65,10 +67,10 @@ end)
 describe("types and column def", function()
     it("Should be able to parse a type", function()
         local result = types("int")
-        assert.equals(result.matched, "int")
+        assert.equals(result.type, "int")
 
         result = types("string")
-        assert.equals(result.matched, "string")
+        assert.equals(result.type, "string")
 
         result = types("does not exist")
         assert.equals(result.success, false)
@@ -76,10 +78,48 @@ describe("types and column def", function()
 
     it("Should parse a column definition", function()
         local result = column_def("hello_world int")
-        assert.equals(result.matched, "hello_world int")
+        assert.equals(result.name, "hello_world")
+        assert.equals(result.type, "int")
 
         result = column_def("hello_world nonsense_type")
-        assert.equals(result.matched, "hello_world ")
+        assert.equals(result.name, "hello_world")
         assert.equals(result.success, false)
+    end)
+end)
+
+describe("oneOrMoreOf", function()
+    it("Should match at least one", function()
+        local result = oneOrMoreOf(column_def, pattern("%s*,%s*"))("hello_world int")
+        assert.equals(result.parts[1].name, "hello_world")
+        assert.equals(result.parts[1].type, "int")
+    end)
+
+    it("Should match one or more", function()
+        local matcher = oneOrMoreOf(column_def, pattern("%s*,%s*"))
+        local result = matcher("hello_world int , test string")
+
+        assert.equals(result.parts[1].name, "hello_world")
+        assert.equals(result.parts[1].type, "int")
+        assert.equals(result.parts[2].name, "test")
+        assert.equals(result.parts[2].type, "string")
+    end)
+
+    it("Should not match 0", function()
+        local matcher = oneOrMoreOf(column_def, pattern("%s*,%s*"))
+        local result = matcher("some garbage that doesn't, match")
+
+        assert.equals(result.success, false)
+    end)
+end)
+
+describe("Create table", function()
+    it("Should be able to match a create table statement", function()
+        local result = create_table("CREATE TABLE test (test string, test2 int)")
+
+        assert.equals(result.table_name, "test")
+        assert.equals(result.columns[1].name, "test")
+        assert.equals(result.columns[1].type, "string")
+        assert.equals(result.columns[2].name, "test2")
+        assert.equals(result.columns[2].type, "int")
     end)
 end)
