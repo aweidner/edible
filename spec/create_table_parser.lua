@@ -1,10 +1,10 @@
 local match_pattern = require("parser").match_pattern
 local pattern = require("parser").pattern
-local anyOf = require("parser").anyOf
+local any_of = require("parser").any_of
 local compose = require("parser").compose
 local types = require("parser").types
 local column_def = require("parser").column_def
-local oneOrMoreOf = require("parser").oneOrMoreOf
+local one_or_more_of = require("parser").one_or_more_of
 local create_table = require("parser").create_table
 
 describe("Match Pattern", function()
@@ -35,14 +35,14 @@ describe("pattern", function()
     end)
 end)
 
-describe("anyOf", function()
+describe("any_of", function()
     it("Should be able to match any of a set of pattern matchers", function()
-        local result = anyOf({pattern("[a-e]"), pattern("[z]+")})("zzzz")
+        local result = any_of({pattern("[a-e]"), pattern("[z]+")})("zzzz")
         assert.equals(result.matched, "zzzz")
     end)
 
     it("Should return false and the original text if it could not match", function()
-        local result = anyOf({pattern("[a-e]"), pattern("[z]+")})("yyyy")
+        local result = any_of({pattern("[a-e]"), pattern("[z]+")})("yyyy")
         assert.equals(result.matched, "")
         assert.equals(result.rem, "yyyy")
     end)
@@ -87,15 +87,15 @@ describe("types and column def", function()
     end)
 end)
 
-describe("oneOrMoreOf", function()
+describe("one_or_more_of", function()
     it("Should match at least one", function()
-        local result = oneOrMoreOf(column_def, pattern("%s*,%s*"))("hello_world int")
+        local result = one_or_more_of(column_def, pattern("%s*,%s*"))("hello_world int")
         assert.equals(result.parts[1].name, "hello_world")
         assert.equals(result.parts[1].type, "int")
     end)
 
     it("Should match one or more", function()
-        local matcher = oneOrMoreOf(column_def, pattern("%s*,%s*"))
+        local matcher = one_or_more_of(column_def, pattern("%s*,%s*"))
         local result = matcher("hello_world int , test string")
 
         assert.equals(result.parts[1].name, "hello_world")
@@ -105,7 +105,7 @@ describe("oneOrMoreOf", function()
     end)
 
     it("Should not match 0", function()
-        local matcher = oneOrMoreOf(column_def, pattern("%s*,%s*"))
+        local matcher = one_or_more_of(column_def, pattern("%s*,%s*"))
         local result = matcher("some garbage that doesn't, match")
 
         assert.equals(result.success, false)

@@ -27,7 +27,7 @@ function parser.pattern(pattern)
     end
 end
 
-function parser.anyOf(matchers)
+function parser.any_of(matchers)
     return function(text)
         for _, matcher in pairs(matchers) do
             local match_result = matcher(text)
@@ -44,7 +44,7 @@ local function remove_matched(matched, match_result)
     return matched .. match_result.matched, match_result.rem
 end
 
-local function saveAs(matcher, field, from_field)
+local function save_as(matcher, field, from_field)
     from_field = from_field or "matched"
     return function(text)
         local match_result = matcher(text)
@@ -75,7 +75,7 @@ function parser.compose(matchers)
     end
 end
 
-function parser.oneOrMoreOf(matcher, optional_next)
+function parser.one_or_more_of(matcher, optional_next)
     return function(text)
         local results = {}
         local remaining = text
@@ -109,19 +109,20 @@ function parser.oneOrMoreOf(matcher, optional_next)
 end
 
 
+parser.identifier = parser.pattern("[a-zA-Z_0-9]+")
 parser.whitespace = parser.pattern("%s*")
-parser.types = saveAs(parser.anyOf({parser.pattern("int"), parser.pattern("string")}),"type")
-parser.column_name = saveAs(parser.pattern("[a-zA-Z_0-9]+"), "name")
+parser.types = save_as(parser.any_of({parser.pattern("int"), parser.pattern("string")}), "type")
+parser.column_name = save_as(parser.identifier, "name")
 parser.column_def = parser.compose({parser.column_name, parser.pattern("%s+"), parser.types})
-parser.columns = parser.oneOrMoreOf(parser.column_def, parser.pattern("%s*,%s*"))
+parser.columns = parser.one_or_more_of(parser.column_def, parser.pattern("%s*,%s*"))
 parser.create_table = parser.compose({
     parser.pattern("CREATE TABLE"),
     parser.whitespace,
-    saveAs(parser.pattern("[a-zA-Z_0-9]+"), "table_name"),
+    save_as(parser.identifier, "table_name"),
     parser.whitespace,
     parser.pattern("%("),
     parser.whitespace,
-    saveAs(parser.columns, "columns", "parts"),
+    save_as(parser.columns, "columns", "parts"),
     parser.pattern("%)"),
     parser.whitespace})
 
