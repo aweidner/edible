@@ -39,8 +39,7 @@ The second phase focuses on optimizations and adding features to make working wi
 At this point I should be able to store string and integer data into the tree structure and retrieve it.  No indexing
 or anything yet, basically just a tree straight out of a Data Structures textbook.
 
-- [ ] Create a tokenizer for SQL syntax
-- [ ] Create a parser for SQL syntax
+- [x] Create a parser for SQL syntax
 - [ ] Support for SELECT statements
 - [ ] Support for INSERT statements
 - [ ] Support for CREATE TABLE statements
