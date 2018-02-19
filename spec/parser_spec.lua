@@ -6,6 +6,7 @@ local types = require("parser").types
 local column_def = require("parser").column_def
 local one_or_more_of = require("parser").one_or_more_of
 local create_table = require("parser").create_table
+local insert = require("parser").insert
 
 describe("Match Pattern", function()
     it("Should be able to parse the text create table", function()
@@ -121,5 +122,27 @@ describe("Create table", function()
         assert.equals(result.columns[1].type, "string")
         assert.equals(result.columns[2].name, "test2")
         assert.equals(result.columns[2].type, "int")
+    end)
+end)
+
+describe("insert into", function()
+    it("Should be able to get the list of columns and values to insert into", function()
+        local result = insert("INSERT INTO test " ..
+            "(test1, test2, test3, test4, test5) " ..
+            "VALUES ('hello', 1, 34, NULL, 'ਡ ਢ ਣ ਤ ਥ ਦ ਧ')")
+
+        assert.equals(result.table_name, "test")
+
+        assert.equals(result.columns[1].name, "test1")
+        assert.equals(result.columns[2].name, "test2")
+        assert.equals(result.columns[3].name, "test3")
+        assert.equals(result.columns[4].name, "test4")
+        assert.equals(result.columns[5].name, "test5")
+
+        assert.equals(result.values[1].value, "hello")
+        assert.equals(result.values[2].value, 1)
+        assert.equals(result.values[3].value, 34)
+        assert.equals(result.values[4].value, nil)
+        assert.equals(result.values[5].value, "ਡ ਢ ਣ ਤ ਥ ਦ ਧ")
     end)
 end)
