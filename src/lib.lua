@@ -102,6 +102,15 @@ local function bisect(array, value, extractor)
     end, 1, #array, true)
 end
 
+local function l_comprehend(values, transformer)
+    local result = {}
+    for _, v in pairs(values) do
+        table.insert(result, transformer(v))
+    end
+
+    return result
+end
+
 return {
     sum = function(iterator)
         -- Sum the contents of the iterator and return the total
@@ -118,6 +127,7 @@ return {
             #array, index_to_comparator)
     end,
 
-    bisect = bisect
-
+    bisect = bisect,
+    l_comprehend = l_comprehend,
+    NIL = {}
 }
