@@ -21,22 +21,51 @@ local function valid_schema(columns)
 end
 
 local function parse_condition(condition)
+    -- TODO: Nearly has to be a better way to do this,
+    -- passing in the environment to load?
     if condition == nil then
         return
     end
 
     return function(result_to_test)
-        local condition_copy = condition
-        for k, v in pairs(result_to_test) do
-            condition_copy = condition_copy:gsub(
-                "%s*" .. k .. "%s", " " .. v .. " ")
-        end
+        local ld = "return " .. condition
+        local f, message = load(ld, ld, ld, result_to_test)
 
-        local f, message = load("return " .. condition_copy)
         assert(message == nil, message)
-
         return f()
     end
+end
+
+local function fqn_tables_come_from(table_name, columns)
+    if not columns or #columns == 0 then
+        return true
+    end
+
+    for _, column in pairs(columns) do
+        assert(column.table_name == nil or column.table_name == table_name)
+    end
+
+    return true
+end
+
+local function all_columns_requested_are_in(table_columns, select_structure_columns)
+    if not select_structure_columns then
+        return true
+    end
+
+    for _, column in pairs(select_structure_columns) do
+        local found = false
+        for _, table_column in pairs(table_columns) do
+            found = column.name == table_column.name
+            if found then
+                break
+            end
+        end
+        -- TODO: Need better assertion here, easier to debug error
+        assert(found, "Column " .. column.name .. " was not found in table")
+    end
+
+    return true
 end
 
 -- TODO: Make configurable
@@ -91,6 +120,9 @@ function Table.Table:get(row_id)
 end
 
 function Table.Table:find(select_structure)
+    assert(fqn_tables_come_from(self.name, select_structure.columns))
+    assert(all_columns_requested_are_in(self.columns, select_structure.columns))
+
     local matches_condition = (parse_condition(select_structure.condition) or
                                (function() return true end))
 
@@ -98,11 +130,18 @@ function Table.Table:find(select_structure)
         for row in self.tree:iterate() do
             local formatted_row = self:format_row(row)
             if matches_condition(formatted_row) then
-                local selected_columns = {}
-                for _, column in pairs(select_structure.columns) do
-                    selected_columns[column.name] = formatted_row[column.name]
+
+                -- Format the columns into only the selected columns or return
+                -- all columns if no columns were requested
+                if select_structure.columns then
+                    local selected_columns = {}
+                    for _, column in pairs(select_structure.columns) do
+                        selected_columns[column.name] = formatted_row[column.name]
+                    end
+                    coroutine.yield(selected_columns)
+                else
+                    coroutine.yield(formatted_row)
                 end
-                coroutine.yield(selected_columns)
             end
         end
     end)

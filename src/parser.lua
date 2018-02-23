@@ -223,7 +223,7 @@ local identifier = parser.pattern("[a-zA-Z_0-9]+")
 local value = parser.any_of({
     to_string(save_as(parser.pattern("'[^']*'"), "value"), "value"),
     to_int(save_as(parser.pattern("[0-9]+"), "value"), "value"),
-    to_nil(save_as(parser.pattern("NULL"), "value"), "value")
+    to_nil(save_as(parser.pattern("nil"), "value"), "value")
 })
 local comma_seperator = parser.pattern("%s*,%s*")
 local whitespace = parser.pattern("%s*")

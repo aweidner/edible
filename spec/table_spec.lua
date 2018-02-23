@@ -142,14 +142,113 @@ describe("Table", function()
     end)
 
     it("Should raise an error if one of the FQN columns does not come from this table", function()
+        local table_structure = {
+            table_name = "test",
+            columns = {
+                {type = "string", name = "test"},
+                {type = "int", name = "test2"}
+            }
+        }
+
+        assert.has.error(function() Table:new(table_structure):find({
+            columns = {{table_name = "table34", name = "test"}}
+        }) end)
     end)
 
     it("Should raise an error if one of the columns does not exist in this table", function()
+        local table_structure = {
+            table_name = "test",
+            columns = {
+                {type = "string", name = "test"},
+                {type = "int", name = "test2"}
+            }
+        }
+
+        assert.has.error(function() Table:new(table_structure):find({
+            columns = {{name = "test99"}}
+        }) end)
     end)
 
     it("Should raise an error if the condition cannot be parsed in lua", function()
+        local table_structure = {
+            table_name = "test",
+            columns = {
+                {type = "string", name = "test"},
+                {type = "int", name = "test2"}
+            }
+        }
+
+        local created_table = Table:new(table_structure)
+
+        assert.has.error(function()
+            local cursor = created_table:find({
+                columns = {{name = "test"}},
+                condition = "test2 > 5"
+            })
+            -- Have to consume the iterator
+            for _ in cursor do  end
+        end)
     end)
 
     it("Should be able to work with NULL in a select condition", function()
+        local table_structure = {
+            table_name = "test",
+            columns = {
+                {type = "string", name = "NULL34"},
+                {type = "int", name = "SOME_OTHER_NULL"}
+            }
+        }
+
+        local created_table = Table:new(table_structure)
+        created_table:insert({"hello1", 34})
+
+        local cursor = created_table:find({
+            columns = {{name = "SOME_OTHER_NULL"}},
+            condition = "NULL34 ~= nil"
+        })
+
+        for item in cursor do
+            assert.equals(item.SOME_OTHER_NULL, 34)
+        end
+    end)
+
+    it("Should work with nil condition", function()
+        local table_structure = {
+            table_name = "test",
+            columns = {
+                {type = "string", name = "NULL34"},
+                {type = "int", name = "SOME_OTHER_NULL"}
+            }
+        }
+
+        local created_table = Table:new(table_structure)
+        created_table:insert({"hello1", 34})
+
+        local cursor = created_table:find({
+            columns = {{name = "SOME_OTHER_NULL"}},
+        })
+
+        for item in cursor do
+            assert.equals(item.SOME_OTHER_NULL, 34)
+        end
+    end)
+
+    it("Should work with nil columns", function()
+        local table_structure = {
+            table_name = "test",
+            columns = {
+                {type = "string", name = "NULL34"},
+                {type = "int", name = "SOME_OTHER_NULL"}
+            }
+        }
+
+        local created_table = Table:new(table_structure)
+        created_table:insert({"hello1", 34})
+
+        local cursor = created_table:find({})
+
+        for item in cursor do
+            assert.equals(item.SOME_OTHER_NULL, 34)
+        end
     end)
 end)

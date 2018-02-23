@@ -130,7 +130,7 @@ describe("insert into", function()
     it("Should be able to get the list of columns and values to insert into", function()
         local result = insert("INSERT INTO test " ..
             "(test1, test2, test3, test4, test5) " ..
-            "VALUES ('hello', 1, 34, NULL, 'ਡ ਢ ਣ ਤ ਥ ਦ ਧ')")
+            "VALUES ('hello', 1, 34, nil, 'ਡ ਢ ਣ ਤ ਥ ਦ ਧ')")
 
         assert.equals(result.table_name, "test")
 
