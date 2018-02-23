@@ -7,6 +7,7 @@ local column_def = require("parser").column_def
 local one_or_more_of = require("parser").one_or_more_of
 local create_table = require("parser").create_table
 local insert = require("parser").insert
+local find = require("parser").find
 
 describe("Match Pattern", function()
     it("Should be able to parse the text create table", function()
@@ -144,5 +145,37 @@ describe("insert into", function()
         assert.equals(result.values[3].value, 34)
         assert.equals(result.values[4].value, nil)
         assert.equals(result.values[5].value, "ਡ ਢ ਣ ਤ ਥ ਦ ਧ")
+    end)
+end)
+
+describe("select", function()
+    it("Should be able to get the table name, list of columns, and condition", function() 
+        local result = find(
+            "SELECT a_table.test1, test2 FROM a_table WHERE test1 == 5 and test2 == 34")
+
+        assert.equals(result.columns[1].name, "test1")
+        assert.equals(result.columns[1].table_name, "a_table")
+
+        assert.equals(result.columns[2].name, "test2")
+        assert.equals(result.columns[2].table_name, nil)
+
+        assert.equals(result.table_name, "a_table")
+
+        assert.equals(result.condition, "test1 == 5 and test2 == 34")
+    end)
+
+    it("Should be able to support selecting all columns", function()
+        local result = find(
+            "SELECT * FROM a_table WHERE test1 == 5 and test2 == 34")
+        assert.equals(result.columns, nil)
+        assert.equals(result.table_name, "a_table")
+    end)
+
+    it("Should be able to take an optional where statement", function()
+        local result = find("SELECT * FROM a_table")
+
+        assert.equals(result.success, true)
+        assert.equals(result.condition, nil)
+        assert.equals(result.table_name, "a_table")
     end)
 end)

@@ -179,6 +179,19 @@ function parser.one_or_more_of(matcher, optional_next)
     end
 end
 
+function parser.optional(matcher)
+    -- Optionally match and do not fail if there is no match,
+    -- just return an empty result so the next matcher can
+    -- continue matching at the last position
+    return function(text)
+        local match_result = matcher(text)
+        if not match_result.success then
+            return result(true, text, "")
+        end
+        return match_result
+    end
+end
+
 local function to_string(matcher, field)
     -- Cast result in field to string (remove quotes)
     return function(text)
@@ -234,19 +247,27 @@ end
 
 parser.types = save_as(parser.any_of({parser.pattern("int"), parser.pattern("string")}), "type")
 parser.column_name = save_as(identifier, "name")
+parser.table_name = save_as(identifier, "table_name")
 parser.column_def = parser.compose({parser.column_name, parser.pattern("%s+"), parser.types})
 parser.columns = save_as(parser.one_or_more_of(parser.column_def, comma_seperator), "columns", "parts")
 parser.column_names = save_as(parser.one_or_more_of(parser.column_name, comma_seperator),
     "columns", "parts")
 parser.values = save_as(parser.one_or_more_of(value, comma_seperator), "values", "parts")
 
+parser.select_columns = save_as(parser.one_or_more_of(
+    parser.compose({
+        parser.optional(parser.compose({
+            parser.table_name,
+            parser.pattern("%.")
+        })),
+        parser.column_name
+    }), comma_seperator), "columns", "parts")
+
 local function paren_wrap(matcher)
     -- Utility function to make working with paren wrapped matchers a little
     -- easier
     return parser.compose({open_paren, matcher, closed_paren})
 end
-
-parser.table_name = save_as(identifier, "table_name")
 
 parser.create_table = parser.compose(allow_whitespace({
     parser.pattern("CREATE TABLE"),
@@ -260,6 +281,20 @@ parser.insert = parser.compose(allow_whitespace({
     paren_wrap(parser.column_names),
     parser.pattern("VALUES"),
     paren_wrap(parser.values)
+}))
+
+-- Select is a basic function, don't shadow it and use `find` instead
+parser.find = parser.compose(allow_whitespace({
+    parser.pattern("SELECT"),
+    parser.any_of({parser.select_columns, parser.pattern("%*")}),
+    parser.pattern("FROM"),
+    parser.table_name,
+    parser.optional(parser.compose(allow_whitespace({
+        parser.pattern("WHERE"),
+        -- TODO: Needs to be more restrictive on what is allowed
+        -- in the condition expression
+        save_as(parser.pattern(".+"), "condition")
+    })))
 }))
 
 return parser
