@@ -1,7 +1,6 @@
 -- Don't accidentally shadow table from the lua standard lib
 local Table = require("src/table").Table
 local lib = require("lib")
-local inspect = require("optional/inspect")
 
 local function make_from(original_columns, original_values)
     -- Produce an insert structure from the contents

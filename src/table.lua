@@ -1,5 +1,4 @@
 local BTree = require("btree").BTree
-local inspect = require("optional/inspect")
 local Row = require("btree").Row
 local Cell = require("btree").Cell
 local NilCell = require("btree").NilCell
@@ -123,7 +122,7 @@ function Table.Table:insert(columns)
             "Column " .. column_name .. " was not defined")
 
         if value == lib.NIL then
-            table.insert(values, nil)
+            table.insert(values, NilCell)
         else
             assert(matches_type(existing_column.type, type(value)))
             table.insert(values, value)
