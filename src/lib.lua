@@ -102,7 +102,7 @@ local function bisect(array, value, extractor)
     end, 1, #array, true)
 end
 
-local function l_comprehend(values, transformer)
+local function map(values, transformer)
     local result = {}
     for _, v in pairs(values) do
         table.insert(result, transformer(v))
@@ -128,6 +128,6 @@ return {
     end,
 
     bisect = bisect,
-    l_comprehend = l_comprehend,
+    map = map,
     NIL = {}
 }

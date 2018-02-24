@@ -1,15 +1,11 @@
 local BTree = require("btree").BTree
+local inspect = require("optional/inspect")
 local Row = require("btree").Row
 local Cell = require("btree").Cell
 local NilCell = require("btree").NilCell
 local lib = require("lib")
 
 local Table = {}
-
-local function matches_type(edible_type, lua_type)
-    return (edible_type == "int" and lua_type == "number" or
-            edible_type == "string" and lua_type == "string")
-end
 
 local function valid_schema(columns)
     for index, column in pairs(columns) do
@@ -68,6 +64,19 @@ local function all_columns_requested_are_in(table_columns, select_structure_colu
     return true
 end
 
+local function columns_by_name(columns)
+    local result = {}
+    for _, column in pairs(columns) do
+        result[column.name] = column
+    end
+    return result
+end
+
+local function matches_type(edible_type, lua_type)
+    return (edible_type == "int" and lua_type == "number" or
+            edible_type == "string" and lua_type == "string")
+end
+
 -- TODO: Make configurable
 local PAGE_SIZE = 256
 
@@ -80,7 +89,10 @@ function Table.Table:new(structure)
     local new_table = {
         row_id = 1,
         name = structure.table_name,
+        -- This is calling out for a special purpose structure to be
+        -- extracted so we don't have to duplicate data
         columns = structure.columns,
+        columns_by_name = columns_by_name(structure.columns),
         tree = BTree:new(PAGE_SIZE)
     }
 
@@ -98,13 +110,30 @@ function Table.Table:format_row(data)
 end
 
 function Table.Table:insert(columns)
-    assert(self:matches_structure(columns))
-    self.tree:insert(Row:new(self.row_id, lib.l_comprehend(columns, function(column)
-        if column.value == lib.NIL then
-            return NilCell
+    assert(#columns.values == #columns.columns,
+        "Mismatch between number of columns and values")
+
+    local values = {}
+    for index, column in ipairs(columns.columns) do
+        local column_name = column.name
+        local value = columns.values[index].value
+        local existing_column = self.columns_by_name[column_name]
+
+        assert(existing_column,
+            "Column " .. column_name .. " was not defined")
+
+        if value == lib.NIL then
+            table.insert(values, nil)
+        else
+            assert(matches_type(existing_column.type, type(value)))
+            table.insert(values, value)
         end
-        return Cell:new(column.value)
+    end
+
+    self.tree:insert(Row:new(self.row_id, lib.map(values, function(value)
+        return Cell:new(value)
     end)))
+
     self.row_id = self.row_id + 1
 end
 
@@ -145,17 +174,6 @@ function Table.Table:find(select_structure)
             end
         end
     end)
-end
-
-function Table.Table:matches_structure(values)
-    assert(#self.columns == #values, "Columns must be the same length as schema")
-    for index, column in ipairs(self.columns) do
-        if values[index].value ~= lib.NIL then
-            assert(matches_type(column.type, type(values[index].value)),
-                "Mismatch at column index " .. tostring(index))
-        end
-    end
-    return true
 end
 
 return Table

@@ -1,6 +1,26 @@
 -- Don't accidentally shadow table from the lua standard lib
 local Table = require("src/table").Table
 local lib = require("lib")
+local inspect = require("optional/inspect")
+
+local function make_from(original_columns, original_values)
+    -- Produce an insert structure from the contents
+    local columns = {}
+    local values = {}
+
+    for _, v in pairs(original_columns) do
+        table.insert(columns, {name = v})
+    end
+
+    for _, v in pairs(original_values) do
+        table.insert(values, {value = v})
+    end
+
+    return {
+        values = values,
+        columns = columns
+    }
+end
 
 describe("Table", function()
     it("Should be able to create a BTree with the appropriate table information", function()
@@ -14,9 +34,7 @@ describe("Table", function()
 
         local created_table = Table:new(table_structure)
 
-        created_table:insert({
-            {name = "test", value = "hello"},
-            {name = "test2", value = 34}})
+        created_table:insert(make_from({"test", "test2"}, {"hello", 34}))
         local row = created_table:get(1)
 
         assert.equals(row.test, "hello")
@@ -33,19 +51,10 @@ describe("Table", function()
         }
 
         local created_table = Table:new(table_structure)
-
-        created_table:insert({
-            {name = "test", value = "hello1"},
-            {name = "test2", value = 34}})
-        created_table:insert({
-            {name = "test", value = "hello2"},
-            {name = "test2", value = 34}})
-        created_table:insert({
-            {name = "test", value = "hello3"},
-            {name = "test2", value = 34}})
-        created_table:insert({
-            {name = "test", value = "hello4"},
-            {name = "test2", value = 34}})
+        created_table:insert(make_from({"test", "test2"}, {"hello1", 34}))
+        created_table:insert(make_from({"test", "test2"}, {"hello2", 34}))
+        created_table:insert(make_from({"test", "test2"}, {"hello3", 34}))
+        created_table:insert(make_from({"test", "test2"}, {"hello4", 34}))
 
         local row = created_table:get(3)
 
@@ -63,14 +72,9 @@ describe("Table", function()
 
         local created_table = Table:new(table_structure)
 
-        assert.has.error(function() created_table:insert({
-            {name = "test", value = "hello"},
-            {name = "test2", value = 34},
-            {name = "test3", value = "hello"}}) end)
-        assert.has.error(function() created_table:insert({
-            {name = "test", value = 56},
-            {name = "test2", value = 34}}) end)
-        end)
+        assert.has.error(function() created_table:insert(make_from({"test", "test2", "test3"}, {"hello", 34, "hello"})) end)
+        assert.has.error(function() created_table:insert(make_from({"test", "test2"}, {"hello", "34"})) end)
+    end)
 
     it("Should allow nils", function()
         local table_structure = {
@@ -84,9 +88,7 @@ describe("Table", function()
         local created_table = Table:new(table_structure)
 
         -- Implicit assertion for allowed nils here
-        created_table:insert({
-            {name = "test", value = lib.NIL},
-            {name = "test2", value = lib.NIL}})
+        created_table:insert(make_from({"test", "test2"}, {lib.NIL, lib.NIL}))
     end)
 
     it("Should raise an error if table name is not defined", function()
@@ -123,9 +125,7 @@ describe("Table", function()
 
         local created_table = Table:new(table_structure)
 
-        created_table:insert({
-            {name = "test", value = "hello1"},
-            {name = "test2", value = 34}})
+        created_table:insert(make_from({"test", "test2"}, {"hello1", 34}))
         assert.equals(created_table:get(3), nil)
     end)
 
@@ -140,12 +140,8 @@ describe("Table", function()
 
         local created_table = Table:new(table_structure)
 
-        created_table:insert({
-            {name = "test", value = "hello1"},
-            {name = "test2", value = 34}})
-        created_table:insert({
-            {name = "test", value = "hello2"},
-            {name = "test2", value = 5}})
+        created_table:insert(make_from({"test", "test2"}, {"hello1", 34}))
+        created_table:insert(make_from({"test", "test2"}, {"hello2", 5}))
 
         local cursor = created_table:find({
             columns = {
@@ -223,9 +219,7 @@ describe("Table", function()
         }
 
         local created_table = Table:new(table_structure)
-        created_table:insert({
-            {name = "NULL34", value = "hello1"},
-            {name = "SOME_OTHER_NULL", value = 34}})
+        created_table:insert(make_from({"NULL34", "SOME_OTHER_NULL"}, {"hello1", 34}))
 
         local cursor = created_table:find({
             columns = {{name = "SOME_OTHER_NULL"}},
@@ -247,9 +241,7 @@ describe("Table", function()
         }
 
         local created_table = Table:new(table_structure)
-        created_table:insert({
-            {name = "NULL34", value = "hello1"},
-            {name = "SOME_OTHER_NULL", value = 34}})
+        created_table:insert(make_from({"NULL34", "SOME_OTHER_NULL"}, {"hello1", 34}))
 
         local cursor = created_table:find({
             columns = {{name = "SOME_OTHER_NULL"}},
@@ -270,9 +262,7 @@ describe("Table", function()
         }
 
         local created_table = Table:new(table_structure)
-        created_table:insert({
-            {name = "NULL34", value = "hello1"},
-            {name = "SOME_OTHER_NULL", value = 34}})
+        created_table:insert(make_from({"NULL34", "SOME_OTHER_NULL"}, {"hello1", 34}))
 
         local cursor = created_table:find({})
 
