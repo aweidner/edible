@@ -121,15 +121,14 @@ function Table.Table:insert(columns)
         assert(existing_column,
             "Column " .. column_name .. " was not defined")
 
-        if value == lib.NIL then
-            table.insert(values, NilCell)
-        else
-            assert(matches_type(existing_column.type, type(value)))
-            table.insert(values, value)
-        end
+        assert(value == lib.NIL or matches_type(existing_column.type, type(value)))
+        table.insert(values, value)
     end
 
     self.tree:insert(Row:new(self.row_id, lib.map(values, function(value)
+        if value == lib.NIL then
+            return NilCell
+        end
         return Cell:new(value)
     end)))
 
