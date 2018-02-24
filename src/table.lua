@@ -97,13 +97,13 @@ function Table.Table:format_row(data)
     return result
 end
 
-function Table.Table:insert(values)
-    assert(self:matches_structure(values))
-    self.tree:insert(Row:new(self.row_id, lib.l_comprehend(values, function(value)
-        if value == lib.NIL then
+function Table.Table:insert(columns)
+    assert(self:matches_structure(columns))
+    self.tree:insert(Row:new(self.row_id, lib.l_comprehend(columns, function(column)
+        if column.value == lib.NIL then
             return NilCell
         end
-        return Cell:new(value)
+        return Cell:new(column.value)
     end)))
     self.row_id = self.row_id + 1
 end
@@ -150,8 +150,8 @@ end
 function Table.Table:matches_structure(values)
     assert(#self.columns == #values, "Columns must be the same length as schema")
     for index, column in ipairs(self.columns) do
-        if values[index] ~= lib.NIL then
-            assert(matches_type(column.type, type(values[index])),
+        if values[index].value ~= lib.NIL then
+            assert(matches_type(column.type, type(values[index].value)),
                 "Mismatch at column index " .. tostring(index))
         end
     end
