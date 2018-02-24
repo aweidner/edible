@@ -6,10 +6,10 @@ local db = Edible:new()
 while true do
     io.write("> ")
     local statement = io.read()
-    local result, message = pcall(function() return db:execute(statement) end)
+    local success, result = pcall(function() return db:execute(statement) end)
 
-    if message then
-        print(message)
+    if not success then
+        print(result)
     else
         if type(result) == "function" then
             for row in result do
