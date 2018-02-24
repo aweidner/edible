@@ -40,9 +40,9 @@ At this point I should be able to store string and integer data into the tree st
 or anything yet, basically just a tree straight out of a Data Structures textbook.
 
 - [x] Create a parser for SQL syntax
-- [ ] Support for SELECT statements
-- [ ] Support for INSERT statements
-- [ ] Support for CREATE TABLE statements
+- [x] Support for SELECT statements
+- [x] Support for INSERT statements
+- [x] Support for CREATE TABLE statements
 
 After this I should have a basic extensible grammar that I can add commands and features to.  Not hooked up to the tree
 structure at all but I can operate this through test cases.  The initial two commands are to implement just enough to be
@@ -54,7 +54,7 @@ This involves mapping the SQL grammar down to something that can work with the t
 the virtual machine that Sqlite has, this will most likely map down to function calls.  Essentially this is making the query 
 planner which will generate a set of function calls to get or write data into the tree structure
 
-- [ ] Create the SQL Command Processor and an interface to operate it
+- [x] Create the SQL Command Processor and an interface to operate it
 
 After this point we have a *very* limited database that can just do INSERT and SELECT statements.  Everything will be
 in memory at this point as well.
