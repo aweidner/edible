@@ -3,31 +3,28 @@ local Row = require("btree").Row
 local Cell = require("btree").Cell
 local NilCell = require("btree").NilCell
 local lib = require("lib")
+local config = require("config")
+local check = require("check")
 
 local Table = {}
 
-local function valid_schema(columns)
-    for index, column in pairs(columns) do
-        assert(column.name ~= nil, "Column name not defined at index " .. tostring(index))
-        assert(column.type ~= nil, "Type not defined for column " .. column.name)
-    end
-
-    return true
-end
+Table.ColumnLookup = {}
+Table.Table = {}
 
 local function parse_condition(condition)
-    -- TODO: Nearly has to be a better way to do this,
-    -- passing in the environment to load?
     if condition == nil then
         return
     end
 
     return function(result_to_test)
-        local ld = "return " .. condition
-        local f, message = load(ld, ld, ld, result_to_test)
+        local created_code = "return " .. condition
+        local matches_condition, message = load(
+            created_code,
+            created_code,
+            created_code, result_to_test)
 
         assert(message == nil, message)
-        return f()
+        return matches_condition()
     end
 end
 
@@ -43,56 +40,54 @@ local function fqn_tables_come_from(table_name, columns)
     return true
 end
 
-local function all_columns_requested_are_in(table_columns, select_structure_columns)
-    if not select_structure_columns then
-        return true
-    end
-
-    for _, column in pairs(select_structure_columns) do
-        local found = false
-        for _, table_column in pairs(table_columns) do
-            found = column.name == table_column.name
-            if found then
-                break
-            end
-        end
-        -- TODO: Need better assertion here, easier to debug error
-        assert(found, "Column " .. column.name .. " was not found in table")
-    end
-
-    return true
-end
-
-local function columns_by_name(columns)
-    local result = {}
-    for _, column in pairs(columns) do
-        result[column.name] = column
-    end
-    return result
-end
-
 local function matches_type(edible_type, lua_type)
     return (edible_type == "int" and lua_type == "number" or
             edible_type == "string" and lua_type == "string")
 end
 
--- TODO: Make configurable
-local PAGE_SIZE = 256
+function Table.ColumnLookup:new(columns)
+    local new_column_lookup = {
+        columns = columns
+    }
+    setmetatable(new_column_lookup, self)
+    self.__index = self
+    return new_column_lookup
+end
 
-Table.Table = {}
+function Table.ColumnLookup:iterate()
+    return ipairs(self.columns)
+end
+
+function Table.ColumnLookup:by_name(name)
+    for _, column in pairs(self.columns) do
+        if column.name == name then
+            return column
+        end
+    end
+
+    return nil
+end
+
+function Table.ColumnLookup:names()
+    if not self.columns then
+        return {}
+    end
+
+    local names = {}
+    for _, column in pairs(self.columns) do
+        table.insert(names, column.name)
+    end
+    return names
+end
 
 function Table.Table:new(structure)
-    assert(structure.table_name ~= nil, "Table name must be defined")
-    assert(valid_schema(structure.columns))
+    check.table_structure(structure)
 
     local new_table = {
         row_id = 1,
         name = structure.table_name,
-        -- This is calling out for a special purpose structure to be
-        -- extracted so we don't have to duplicate data
-        columns = structure.columns,
-        columns_by_name = columns_by_name(structure.columns),
-        tree = BTree:new(PAGE_SIZE)
+        column_lookup = Table.ColumnLookup:new(structure.columns),
+        tree = BTree:new(config.PAGE_SIZE)
     }
 
     setmetatable(new_table, self)
@@ -102,7 +97,7 @@ end
 
 function Table.Table:format_row(data)
     local result = {}
-    for index, column in ipairs(self.columns) do
+    for index, column in self.column_lookup:iterate() do
         result[column.name] = data:get(index).data
     end
     return result
@@ -116,7 +111,7 @@ function Table.Table:insert(columns)
     for index, column in ipairs(columns.columns) do
         local column_name = column.name
         local value = columns.values[index].value
-        local existing_column = self.columns_by_name[column_name]
+        local existing_column = self.column_lookup:by_name(column_name)
 
         assert(existing_column,
             "Column " .. column_name .. " was not defined")
@@ -136,10 +131,13 @@ function Table.Table:insert(columns)
 end
 
 function Table.Table:get(row_id)
+    -- Attempt to get a single row by id from the B-Tree.  If the row id
+    -- does not exist in the B-Tree, return nil.
+    --
+    -- This method does not interact with SELECT statements in any way,
+    -- it simply attempts to fetch a row by row id.
     local success, data = pcall(function() return self.tree:select(row_id) end)
     if not success then
-        -- TODO: Is there a better way to handle this than simply
-        -- returning nil?
         return nil
     end
 
@@ -148,7 +146,9 @@ end
 
 function Table.Table:find(select_structure)
     assert(fqn_tables_come_from(self.name, select_structure.columns))
-    assert(all_columns_requested_are_in(self.columns, select_structure.columns))
+    check.subset(self.column_lookup:names(),
+                 Table.ColumnLookup:new(select_structure.columns):names())
+
 
     local matches_condition = (parse_condition(select_structure.condition) or
                                (function() return true end))
