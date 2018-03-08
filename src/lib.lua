@@ -5,39 +5,39 @@
 -- data.  Primarily to support composite keys for indexes and temporary
 -- tables.
 local function lt(a, b)
-
-    if b == math.huge then
-        return true
-    elseif b == -math.huge then
+    -- math.huge is supported as a cap within other parts
+    -- of the application.  In order to support maintaining a
+    -- total ordering, it's convenient to make it a cap here.
+    --
+    -- Every value is less than math.huge and no value is
+    -- less than -math.huge.  This includes values of other types
+    -- like strings or tables (even nil is not less than -math.huge).
+    if a == math.huge or b == -math.huge then
         return false
-    elseif a == math.huge then
-        return false
-    elseif a == -math.huge then
+    elseif a == -math.huge or b == math.huge then
         return true
     end
 
+    -- We can only compare values of the same type obviously
     assert(type(a) == type(b))
 
+    -- This gets a little complicated, what are the criteria to
+    -- say if one table is less than another?  For the purposes of
+    -- these comparisons, only the table valiant of a table is supported.
     if type(a) == "table" then
-        if #a == 0 and #b == 0 then
-            return false
-        end
 
-        if #a == 0 and #b > 0 then
-            return true
-        end
-
-        if #a > 0 and #b == 0 then
-            return false
-        end
-
+        -- Iterate over only the shorter of the two tables
         local shorter = a;
         if #b < #a then
             shorter = b
         end
 
         for index, _ in ipairs(shorter) do
+            -- Both have to be of the same type in order to be comparable
             assert(type(a[index]) == type(b[index]))
+
+            -- What we're looking for here is a clear differentiator.
+            -- to say that one is less than the other.
             if a[index] < b[index] then
                 return true
             elseif a[index] > b[index] then
@@ -45,36 +45,45 @@ local function lt(a, b)
             end
         end
 
-        if #a < #b then
-            return true
-        else
-            return false
-        end
+        -- Everything was equal, the shorter of the two is the
+        -- "lesser"
+        return #a < #b
     end
+
+    -- If we're not comparing a table, there's no magic.
+    -- Just do the direct comparison
     return a < b
 end
 
 local function eq(a, b)
+    -- The reason this assertion has to come first is because
+    -- we have to know if both a and b are tables
     if type(a) ~= type(b) then
         return false
     end
 
+    -- These are both tables, we can compare them evenly
     if type(a) == "table" then
+
+        -- If they are not the same length, they are obviously inequal
         if #a ~= #b then
             return false
         end
 
+        -- If any of their contents are unequal, they are unequal
         for index, _ in ipairs(a) do
             if a[index] ~= b[index] then
                 return false
             end
         end
 
+        -- These two are equal
         return true
     end
     return a == b
 end
 
+-- All other comparisons are done in terms of equals and lt
 local function gt(a, b)
     return not (eq(a, b) or lt(a, b))
 end
@@ -160,7 +169,6 @@ local function bisect(array, value, extractor)
     -- compare on the extreme ends (positions not actually in the array) to see
     -- if values are supposed to be inserted there.  Since we can't do that with
     -- a conventional search, take care of the caps by special case.
-
     return find_recursive(array, function(comparison_index)
         local value_at_current_index = extractor(array[comparison_index])
 
@@ -194,6 +202,8 @@ local function bisect(array, value, extractor)
 end
 
 local function map(values, transformer)
+    -- Map the table of values through the transformer function, producing
+    -- a table of the result
     local result = {}
     for _, v in pairs(values) do
         table.insert(result, transformer(v))
@@ -225,9 +235,5 @@ return {
     -- substitute
     NIL = {},
     -- Expose operators in case they need to be used elsewhere
-    lt = lt,
-    gt = gt,
-    gte = gte,
-    lte = lte,
-    eq = eq
+    lt = lt, gt = gt, gte = gte, lte = lte, eq = eq
 }
