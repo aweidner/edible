@@ -164,4 +164,64 @@ describe("BTree", function()
 
         assert.equal(tree:select(3):get(2).data, "Some string  ओ औ ")
     end)
+
+    it("Should work with non-integer row ids", function()
+        local tree = BTree:new(256)
+
+        tree:insert(Row:new("c", {Cell:new(34), Cell:new("Third entry")}))
+        tree:insert(Row:new("b", {Cell:new(34), Cell:new("Second entry")}))
+        tree:insert(Row:new("a", {Cell:new(34), Cell:new("First entry")}))
+        tree:insert(Row:new("d", {Cell:new(34), Cell:new("Fourth entry")}))
+        tree:insert(Row:new("e", {Cell:new(34), Cell:new("Fifth entry")}))
+
+        local expected_row_ids = {"a", "b", "c", "d", "e"}
+
+        local index = 1
+        for value in tree:iterate() do
+            assert.equal(value._id, expected_row_ids[index])
+            index = index + 1
+        end
+    end)
+
+    it("Should work with composite row ids", function()
+        local tree = BTree:new(256)
+
+        tree:insert(Row:new({1, 2}, {Cell:new(3), Cell:new("Third entry")}))
+        tree:insert(Row:new({0, 1}, {Cell:new(2), Cell:new("Second entry")}))
+        tree:insert(Row:new({0, 0}, {Cell:new(1), Cell:new("First entry")}))
+        tree:insert(Row:new({1, 3}, {Cell:new(4), Cell:new("Fourth entry")}))
+        tree:insert(Row:new({3, 4}, {Cell:new(5), Cell:new("Fifth entry")}))
+
+        local expected_data = {1, 2, 3, 4, 5}
+
+        local index = 1
+        for value in tree:iterate() do
+            assert.equal(value:get(1).data, expected_data[index])
+            index = index + 1
+        end
+    end)
+
+    it("Should work with composite heterogeneous duplicate row ids", function()
+        local tree = BTree:new(256)
+
+        tree:insert(Row:new({"a", "z", 3}, {Cell:new(5), Cell:new("Fifth entry")}))
+        tree:insert(Row:new({"a", "b", 3}, {Cell:new(3), Cell:new("Third entry")}))
+        tree:insert(Row:new({"a", "b", 3}, {Cell:new(2), Cell:new("Second entry")}))
+        tree:insert(Row:new({"a", "b", 25}, {Cell:new(1), Cell:new("First entry")}))
+        tree:insert(Row:new({"a", "b", 26}, {Cell:new(4), Cell:new("Fourth entry")}))
+
+        local expected_data = {2, 3, 1, 4, 5}
+
+        local index = 1
+        for value in tree:iterate() do
+            assert.equal(value:get(1).data, expected_data[index])
+            index = index + 1
+        end
+    end)
+
+    it("Should allow get to work with non integer composite keys", function()
+        local tree = BTree:new(256)
+        tree:insert(Row:new({"a", "b"}, {Cell:new(2), Cell:new("Second entry")}))
+        assert.equals(tree:select({"a", "b"}):get(1).data, 2)
+    end)
 end)

@@ -10,12 +10,21 @@ local function get_size(data)
     --
     -- ASSUMPTION: We are operating on the standard Lua with 64 bit
     -- integers and 8 byte per code point strings
-    assert(data == nil or type(data) == "number" or type(data) == "string")
+    assert(type(data) == "nil" or
+           type(data) == "number" or
+           type(data) == "string" or
+           type(data) == "table")
 
     if type(data) == "number" then
         return 8
     elseif type(data) == "string" then
         return #data
+    elseif type(data) == "table" then
+        local size = 0
+        for _, v in ipairs(data) do
+            size = size + get_size(v)
+        end
+        return size
     elseif type(data) == "nil" then
         return 0
     end
@@ -54,8 +63,6 @@ function BTree.Row:new(row_id, cells)
     -- it should be an instance of NilCell for efficiency
 
     assert(row_id ~= nil, "Row ID may not be nil")
-    assert(type(row_id) == "number", "Row ID must be a number")
-    assert(row_id > 0, "Row ID must be greater than 0")
 
     local new_row = {cells = cells or {}, _id = row_id}
 
@@ -102,7 +109,7 @@ function BTree.Page:new(max_size, elements)
 
     if elements then
         table.sort(elements, function(a, b)
-            return a:id() < b:id()
+            return lib.lt(a:id(), b:id())
         end)
     end
 
@@ -149,7 +156,13 @@ function BTree.Page:get(element_id)
     -- Returns the element with the given `element_id` if it exists in this page.
     -- If the elements does not exist in this page an error will be returned
     local element_index = lib.find(self.elements, function(element)
-        return element_id - element:id()
+        if lib.lt(element_id, element:id()) then
+            return -1
+        elseif lib.gt(element_id, element:id()) then
+            return 1
+        else
+            return 0
+        end
     end)
     assert(element_index > 0, "Row was not located in this page")
     return self.elements[element_index]

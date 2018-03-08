@@ -11,11 +11,6 @@ describe("Row", function()
         assert.has.errors(function() Row:new() end)
     end)
 
-    it("Should throw an error if an invalid row id is provided", function()
-        assert.has.errors(function() Row:new(-1) end)
-        assert.has.errors(function() Row:new("not a number") end)
-    end)
-
     it("Should accept an optional list of cells", function()
         local row = Row:new(1, {
             NilCell,
@@ -36,5 +31,17 @@ describe("Row", function()
         })
 
         assert.equal(row:size(), 51)
+    end)
+
+    it("Should get the appropriate size if the row id is composite", function()
+        -- The cell size is 43 + 24 bits for the composite key size
+        -- yields 67 bits
+        local row = Row:new({1, 2, 3}, {
+            NilCell,
+            Cell:new(3),
+            Cell:new("Hello World")
+        })
+
+        assert.equal(row:size(), 67)
     end)
 end)

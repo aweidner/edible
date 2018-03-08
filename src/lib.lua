@@ -1,6 +1,92 @@
 -- Contains utility functions or other dependencies that are used
 -- throughout the code base
 
+-- Comparison functions to implement a total ordering over non-traditional
+-- data.  Primarily to support composite keys for indexes and temporary
+-- tables.
+local function lt(a, b)
+
+    if b == math.huge then
+        return true
+    elseif b == -math.huge then
+        return false
+    elseif a == math.huge then
+        return false
+    elseif a == -math.huge then
+        return true
+    end
+
+    assert(type(a) == type(b))
+
+    if type(a) == "table" then
+        if #a == 0 and #b == 0 then
+            return false
+        end
+
+        if #a == 0 and #b > 0 then
+            return true
+        end
+
+        if #a > 0 and #b == 0 then
+            return false
+        end
+
+        local shorter = a;
+        if #b < #a then
+            shorter = b
+        end
+
+        for index, _ in ipairs(shorter) do
+            assert(type(a[index]) == type(b[index]))
+            if a[index] < b[index] then
+                return true
+            elseif a[index] > b[index] then
+                return false
+            end
+        end
+
+        if #a < #b then
+            return true
+        else
+            return false
+        end
+    end
+    return a < b
+end
+
+local function eq(a, b)
+    if type(a) ~= type(b) then
+        return false
+    end
+
+    if type(a) == "table" then
+        if #a ~= #b then
+            return false
+        end
+
+        for index, _ in ipairs(a) do
+            if a[index] ~= b[index] then
+                return false
+            end
+        end
+
+        return true
+    end
+    return a == b
+end
+
+local function gt(a, b)
+    return not (eq(a, b) or lt(a, b))
+end
+
+local function lte(a, b)
+    return lt(a, b) or eq(a, b)
+end
+
+local function gte(a, b)
+    return gt(a, b) or eq(a, b)
+end
+
 local function find_recursive(array, comparator, first, last, index_to_comparator)
     -- Do a recursive binary search.  At each point in the search the
     -- comparator is called.  The comparator should return one of
@@ -28,10 +114,11 @@ local function find_recursive(array, comparator, first, last, index_to_comparato
         argument_to_comparator = array[midpoint]
     end
 
+    local comparison_result = comparator(argument_to_comparator)
 
-    if comparator(argument_to_comparator) > 0 then
+    if comparison_result > 0 then
         return find_recursive(array, comparator, midpoint + 1, last, index_to_comparator)
-    elseif comparator(argument_to_comparator) < 0 then
+    elseif comparison_result < 0 then
         return find_recursive(array, comparator, first, midpoint - 1, index_to_comparator)
     else
         return midpoint
@@ -58,12 +145,12 @@ local function bisect(array, value, extractor)
     end
 
     -- Special case for when we need to insert this element at the end of the list
-    if value <= extractor(array[1]) then
+    if lte(value, extractor(array[1])) then
         return 1
     end
 
     -- Special case for when we need to insert this element at the end of the list
-    if value >= extractor(array[#array]) then
+    if gte(value, extractor(array[#array])) then
         return #array + 1
     end
 
@@ -92,12 +179,16 @@ local function bisect(array, value, extractor)
         --
         -- If it is not between the current and left indicies than we need to keep
         -- searching, we therefore do the normal binary search operations
-        if value_at_left_index <= value and value <= value_at_current_index then
+        if lte(value_at_left_index, value) and lte(value, value_at_current_index) then
             return 0
-        elseif value_at_current_index > value then
+        elseif gt(value_at_current_index, value) then
             return -1
-        elseif value_at_current_index < value then
+        elseif lt(value_at_current_index, value) then
             return 1
+        else
+            assert(false, "Programmer error, this condition occurs when there is not " ..
+                          "a total ordering of all elements with the searched array.  " ..
+                          "It indicates a deficiency in the ordering algorithms.")
         end
     end, 1, #array, true)
 end
@@ -129,5 +220,14 @@ return {
 
     bisect = bisect,
     map = map,
-    NIL = {}
+    -- Special NIL value to use in place of actual NIL.  Tables
+    -- cannot contain the actual nil value, so use this as a
+    -- substitute
+    NIL = {},
+    -- Expose operators in case they need to be used elsewhere
+    lt = lt,
+    gt = gt,
+    gte = gte,
+    lte = lte,
+    eq = eq
 }
