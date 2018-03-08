@@ -43,6 +43,10 @@ describe("Less than", function()
         assert.equal(lib.lt(-math.huge, {}), true)
         assert.equal(lib.lt({}, -math.huge), false)
     end)
+
+    it("Works on table values when the second value is shorter than the first", function()
+        assert.equal(lib.lt({"a", "a"}, {"a"}), false)
+    end)
 end)
 
 describe("Greater than", function()

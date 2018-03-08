@@ -193,10 +193,6 @@ local function bisect(array, value, extractor)
             return -1
         elseif lt(value_at_current_index, value) then
             return 1
-        else
-            assert(false, "Programmer error, this condition occurs when there is not " ..
-                          "a total ordering of all elements with the searched array.  " ..
-                          "It indicates a deficiency in the ordering algorithms.")
         end
     end, 1, #array, true)
 end
