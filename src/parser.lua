@@ -230,6 +230,17 @@ local whitespace = parser.pattern("%s*")
 local open_paren = parser.pattern("%(")
 local closed_paren = parser.pattern("%)")
 
+-- TODO: Needs to be more restrictive on what is allowed
+-- in the condition expression
+local condition = save_as(
+    parser.one_or_more_of(
+        parser.pattern("[^%s]+%s*[^%s]+%s*[^%s]+"),
+        parser.any_of({
+            parser.pattern("%s*and%s*"),
+            parser.pattern("%s*or%s*")
+        })
+    ), "condition")
+
 local function allow_whitespace(matchers)
     -- Transform a list of parsers into a list of
     -- parsers that will accept whitespace between all other
@@ -248,6 +259,22 @@ end
 parser.types = save_as(parser.any_of({parser.pattern("int"), parser.pattern("string")}), "type")
 parser.column_name = save_as(identifier, "name")
 parser.table_name = save_as(identifier, "table_name")
+
+-- Describes the entire table that needs to be constructed for
+-- a query to execute, could be one table or tables joined on certain
+-- conditions
+parser.table_description = parser.compose(allow_whitespace({
+    parser.table_name,
+    save_as(parser.optional(parser.compose(allow_whitespace({
+        parser.pattern("JOIN"),
+        parser.one_or_more_of(parser.compose(allow_whitespace({
+            parser.table_name,
+            parser.pattern("ON"),
+            condition,
+        })), parser.pattern("%s*JOIN%s*"))
+    }))), "joins", "parts")
+}))
+
 parser.column_def = parser.compose({parser.column_name, parser.pattern("%s+"), parser.types})
 parser.columns = save_as(parser.one_or_more_of(parser.column_def, comma_seperator), "columns", "parts")
 parser.column_names = save_as(parser.one_or_more_of(parser.column_name, comma_seperator),
@@ -288,12 +315,10 @@ parser.find = parser.compose(allow_whitespace({
     parser.pattern("SELECT"),
     parser.any_of({parser.select_columns, parser.pattern("%*")}),
     parser.pattern("FROM"),
-    parser.table_name,
+    parser.table_description,
     parser.optional(parser.compose(allow_whitespace({
         parser.pattern("WHERE"),
-        -- TODO: Needs to be more restrictive on what is allowed
-        -- in the condition expression
-        save_as(parser.pattern(".+"), "condition")
+        condition
     })))
 }))
 

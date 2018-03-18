@@ -179,3 +179,21 @@ describe("select", function()
         assert.equals(result.table_name, "a_table")
     end)
 end)
+
+describe("joins", function()
+    it("Should be able to support a single join", function()
+        local result = find("SELECT * FROM a_table JOIN b_table ON a_table.test == b_table.test")
+
+        assert.equals(result.table_name, "a_table")
+        assert.equals(result.joins[1].table_name, "b_table")
+    end)
+
+    it("Should list all conditions to join on", function()
+        local result = find("SELECT * FROM a_table JOIN " ..
+            "b_table ON a_table.test == b_table.test JOIN " ..
+            "c_table ON a_table.test2 == c_table.test2")
+
+        assert.equals(result.joins[1].condition, "a_table.test == b_table.test")
+        assert.equals(result.joins[2].condition, "a_table.test2 == c_table.test2")
+    end)
+end)
