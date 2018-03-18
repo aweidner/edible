@@ -230,8 +230,11 @@ local whitespace = parser.pattern("%s*")
 local open_paren = parser.pattern("%(")
 local closed_paren = parser.pattern("%)")
 
--- TODO: Needs to be more restrictive on what is allowed
--- in the condition expression
+-- Expressions are one or more of a logical condition
+--  (ex a == b)
+-- Followed by a connective
+--  (ex and/or)
+-- Which gets saved into the field "condition"
 local condition = save_as(
     parser.one_or_more_of(
         parser.pattern("[^%s]+%s*[^%s]+%s*[^%s]+"),
