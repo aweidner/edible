@@ -27,7 +27,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "test"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -45,7 +45,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "test"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -65,7 +65,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "test"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -80,7 +80,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "test"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -94,7 +94,7 @@ describe("Table", function()
         local table_structure = {
             columns = {
                 {type = "string", name = "test"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -106,7 +106,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -118,7 +118,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "test"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -133,7 +133,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "test"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -164,7 +164,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "test"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -178,7 +178,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "test"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -192,7 +192,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "test"},
-                {type = "int", name = "test2"}
+                {type = "number", name = "test2"}
             }
         }
 
@@ -213,7 +213,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "NULL34"},
-                {type = "int", name = "SOME_OTHER_NULL"}
+                {type = "number", name = "SOME_OTHER_NULL"}
             }
         }
 
@@ -235,7 +235,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "NULL34"},
-                {type = "int", name = "SOME_OTHER_NULL"}
+                {type = "number", name = "SOME_OTHER_NULL"}
             }
         }
 
@@ -256,7 +256,7 @@ describe("Table", function()
             table_name = "test",
             columns = {
                 {type = "string", name = "NULL34"},
-                {type = "int", name = "SOME_OTHER_NULL"}
+                {type = "number", name = "SOME_OTHER_NULL"}
             }
         }
 

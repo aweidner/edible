@@ -9,7 +9,7 @@ local function get_size(data)
     -- easier to enforce page size rules
     --
     -- ASSUMPTION: We are operating on the standard Lua with 64 bit
-    -- integers and 8 byte per code point strings
+    -- numbers and 8 byte per code point strings
     assert(type(data) == "nil" or
            type(data) == "number" or
            type(data) == "string" or

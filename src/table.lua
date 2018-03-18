@@ -41,8 +41,7 @@ local function fqn_tables_come_from(table_name, columns)
 end
 
 local function matches_type(edible_type, lua_type)
-    return (edible_type == "int" and lua_type == "number" or
-            edible_type == "string" and lua_type == "string")
+    return edible_type == lua_type
 end
 
 function Table.ColumnLookup:new(columns)

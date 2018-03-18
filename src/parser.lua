@@ -201,8 +201,8 @@ local function to_string(matcher, field)
     end
 end
 
-local function to_int(matcher, field)
-    -- Cast result in field to int
+local function to_number(matcher, field)
+    -- Cast result in field to number
     return function(text)
         local match_result = matcher(text)
         match_result[field] = tonumber(match_result[field])
@@ -222,7 +222,7 @@ end
 local identifier = parser.pattern("[a-zA-Z_0-9]+")
 local value = parser.any_of({
     to_string(save_as(parser.pattern("'[^']*'"), "value"), "value"),
-    to_int(save_as(parser.pattern("[0-9]+"), "value"), "value"),
+    to_number(save_as(parser.pattern("[0-9]+"), "value"), "value"),
     to_nil(save_as(parser.pattern("nil"), "value"), "value")
 })
 local comma_seperator = parser.pattern("%s*,%s*")
@@ -256,7 +256,7 @@ local function allow_whitespace(matchers)
     return result_matchers
 end
 
-parser.types = save_as(parser.any_of({parser.pattern("int"), parser.pattern("string")}), "type")
+parser.types = save_as(parser.any_of({parser.pattern("number"), parser.pattern("string")}), "type")
 parser.column_name = save_as(identifier, "name")
 parser.table_name = save_as(identifier, "table_name")
 
