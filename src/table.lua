@@ -1,4 +1,3 @@
-local inspect = require("optional/inspect")
 local BTree = require("btree").BTree
 local Row = require("btree").Row
 local Cell = require("btree").Cell
