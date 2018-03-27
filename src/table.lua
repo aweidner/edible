@@ -1,3 +1,4 @@
+local inspect = require("optional/inspect")
 local BTree = require("btree").BTree
 local Row = require("btree").Row
 local Cell = require("btree").Cell
@@ -40,43 +41,11 @@ local function fqn_tables_come_from(table_name, columns)
     return true
 end
 
-local function matches_type(edible_type, lua_type)
-    return edible_type == lua_type
-end
-
-function Table.ColumnLookup:new(columns)
-    local new_column_lookup = {
-        columns = columns
-    }
-    setmetatable(new_column_lookup, self)
-    self.__index = self
-    return new_column_lookup
-end
-
-function Table.ColumnLookup:iterate()
-    return ipairs(self.columns)
-end
-
-function Table.ColumnLookup:by_name(name)
-    for _, column in pairs(self.columns) do
-        if column.name == name then
-            return column
-        end
-    end
-
-    return nil
-end
-
-function Table.ColumnLookup:names()
-    if not self.columns then
-        return {}
-    end
-
-    local names = {}
-    for _, column in pairs(self.columns) do
-        table.insert(names, column.name)
-    end
-    return names
+local function assert_operation_columns_are_subset_of_table_columns(
+        table_columns, operation_columns)
+    local return_name = (function(column) return column.name end)
+    check.subset(lib.map(table_columns, return_name),
+                 lib.map(operation_columns, return_name))
 end
 
 function Table.Table:new(structure)
@@ -85,7 +54,7 @@ function Table.Table:new(structure)
     local new_table = {
         row_id = 1,
         name = structure.table_name,
-        column_lookup = Table.ColumnLookup:new(structure.columns),
+        columns = structure.columns,
         tree = BTree:new(config.PAGE_SIZE)
     }
 
@@ -96,7 +65,7 @@ end
 
 function Table.Table:format_row(data)
     local result = {}
-    for index, column in self.column_lookup:iterate() do
+    for index, column in ipairs(self.columns) do
         result[column.name] = data:get(index).data
     end
     return result
@@ -105,28 +74,50 @@ end
 function Table.Table:insert(columns)
     assert(#columns.values == #columns.columns,
         "Mismatch between number of columns and values")
+    assert_operation_columns_are_subset_of_table_columns(
+        self.columns, columns.columns)
 
-    local values = {}
-    for index, column in ipairs(columns.columns) do
-        local column_name = column.name
-        local value = columns.values[index].value
-        local existing_column = self.column_lookup:by_name(column_name)
+    local values_to_insert = {}
 
-        assert(existing_column,
-            "Column " .. column_name .. " was not defined")
+    -- This could alternatively be done by zipping the items
+    -- from columns.columns and columns.values into one table
+    -- and then iterating through it, but seeking instead of
+    -- zipping means only one iteration
+    for _, column in ipairs(self.columns) do
+        -- Find the index of the column in columns.columns
+        local index_of_value = nil
+        for index, column_definition in ipairs(columns.columns) do
+            if column_definition.name == column.name then
+                -- Column was found, this index is also the index
+                -- of the value
+                index_of_value = index
+            end
+        end
 
-        assert(value == lib.NIL or matches_type(existing_column.type, type(value)))
-        table.insert(values, value)
+        if index_of_value then
+            local this_value = columns.values[index_of_value].value
+            assert(type(this_value) == column.type or this_value == lib.NIL)
+            table.insert(values_to_insert, this_value)
+        else
+            table.insert(values_to_insert, lib.NIL)
+        end
     end
 
-    self.tree:insert(Row:new(self.row_id, lib.map(values, function(value)
+    self:insert_all(values_to_insert)
+    self.row_id = self.row_id + 1
+end
+
+function Table.Table:insert_all(values_to_insert)
+    -- Values may contain the Nil representation.  Translate this into
+    -- a NilCell for the BTree
+    local final_values = lib.map(values_to_insert, function(value)
         if value == lib.NIL then
             return NilCell
         end
         return Cell:new(value)
-    end)))
+    end)
 
-    self.row_id = self.row_id + 1
+    self.tree:insert(Row:new(self.row_id, final_values))
 end
 
 function Table.Table:get(row_id)
@@ -145,9 +136,8 @@ end
 
 function Table.Table:find(select_structure)
     assert(fqn_tables_come_from(self.name, select_structure.columns))
-    check.subset(self.column_lookup:names(),
-                 Table.ColumnLookup:new(select_structure.columns):names())
-
+    assert_operation_columns_are_subset_of_table_columns(
+        self.columns, select_structure.columns or {})
 
     local matches_condition = (parse_condition(select_structure.condition) or
                                (function() return true end))

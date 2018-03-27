@@ -263,10 +263,54 @@ describe("Table", function()
         local created_table = Table:new(table_structure)
         created_table:insert(make_from({"NULL34", "SOME_OTHER_NULL"}, {"hello1", 34}))
 
-        local cursor = created_table:find({})
+        local cursor = created_table:find({
+            columns = {{name = "SOME_OTHER_NULL"}},
+        })
 
         for item in cursor do
             assert.equals(item.SOME_OTHER_NULL, 34)
+        end
+    end)
+
+    it("Should insert values in the correct order", function()
+        local table_structure = {
+            table_name = "test",
+            columns = {
+                {type = "string", name = "NULL34"},
+                {type = "number", name = "SOME_OTHER_NULL"}
+            }
+        }
+
+        local created_table = Table:new(table_structure)
+        created_table:insert(make_from({"SOME_OTHER_NULL", "NULL34"}, {34, "hello1"}))
+
+        local cursor = created_table:find({
+            columns = {{name = "SOME_OTHER_NULL"}},
+        })
+
+        for item in cursor do
+            assert.equals(item.SOME_OTHER_NULL, 34)
+        end
+    end)
+
+    it("Should fill in nil for any values that are not specified", function()
+        local table_structure = {
+            table_name = "test",
+            columns = {
+                {type = "string", name = "NULL34"},
+                {type = "number", name = "SOME_OTHER_NULL"}
+            }
+        }
+
+        local created_table = Table:new(table_structure)
+        created_table:insert(make_from({"NULL34"}, {"hello1"}))
+
+        local cursor = created_table:find({
+            columns = {{name = "SOME_OTHER_NULL"}},
+        })
+
+        for item in cursor do
+            assert.equals(item.SOME_OTHER_NULL, nil)
         end
     end)
 end)
