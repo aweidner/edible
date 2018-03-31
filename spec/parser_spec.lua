@@ -146,10 +146,19 @@ describe("insert into", function()
         assert.equals(result.values[4].value, nil)
         assert.equals(result.values[5].value, "ਡ ਢ ਣ ਤ ਥ ਦ ਧ")
     end)
+
+    it("Should be able to work with any numeral values", function()
+        local result = insert("INSERT INTO test " ..
+            "(test1, test2, test3) VALUES (1.34, -27.67, .983)")
+
+        assert.equals(result.values[1].value, 1.34)
+        assert.equals(result.values[2].value, -27.67)
+        assert.equals(result.values[3].value, 0.983)
+    end)
 end)
 
 describe("select", function()
-    it("Should be able to get the table name, list of columns, and condition", function() 
+    it("Should be able to get the table name, list of columns, and condition", function()
         local result = find(
             "SELECT a_table.test1, test2 FROM a_table WHERE test1 == 5 and test2 == 34")
 
