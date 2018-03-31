@@ -325,4 +325,9 @@ parser.find = parser.compose(allow_whitespace({
     })))
 }))
 
+parser.drop_table = parser.compose(allow_whitespace({
+    parser.pattern("DROP TABLE"),
+    parser.table_name
+}))
+
 return parser

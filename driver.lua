@@ -6,6 +6,12 @@ local db = Edible:new()
 while true do
     io.write("> ")
     local statement = io.read()
+
+    if statement == "exit" then
+        -- Special driver command to quit
+        break
+    end
+
     local success, result = pcall(function() return db:execute(statement) end)
 
     if not success then
