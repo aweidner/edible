@@ -286,10 +286,8 @@ parser.values = save_as(parser.one_or_more_of(value, comma_seperator), "values",
 
 parser.select_columns = save_as(parser.one_or_more_of(
     parser.compose({
-        parser.optional(parser.compose({
-            parser.table_name,
-            parser.pattern("%.")
-        })),
+        parser.table_name,
+        parser.pattern("%."),
         parser.column_name
     }), comma_seperator), "columns", "parts")
 

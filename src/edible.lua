@@ -1,5 +1,6 @@
 local Table = require("src/table").Table
 local parser = require("parser")
+local inspect = require("optional/inspect")
 
 local Edible = {}
 
@@ -33,8 +34,19 @@ function Edible:insert(statement)
 end
 
 function Edible:find(statement)
-    local select_structure = parser.find(statement)
-    return self.tables[select_structure.table_name]:find(select_structure)
+
+    -- Create a temp table that has the schema of the tables
+    -- that are being joined into it
+    --
+    -- For each entry in each table
+    --   If the join condition is met
+    --     If the select condition is met
+    --       Create a row index either by integer or by what we're sorting by
+    --       Create the row based on which columns were selected
+    --       Insert the row with the row id
+    --     end
+    --   end
+    -- end
 end
 
 return Edible
