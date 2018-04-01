@@ -395,6 +395,10 @@ function BTree.BTree:iterate()
     -- Iteration on a tree means we need to iterate
     -- through the root and all its children
     return coroutine.wrap(function()
+        if self.root == nil then
+            return
+        end
+
         for value in self.root:iterate() do
             coroutine.yield(value)
         end

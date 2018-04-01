@@ -3,6 +3,7 @@ local Table = require("src/table").Table
 local parser = require("parser")
 local check = require("check")
 local Schema = require("schema")
+local inspect = require("optional/inspect")
 
 local Edible = {}
 
@@ -88,12 +89,41 @@ function Edible:drop_table(statement)
     self.tables[table_name] = nil
 end
 
+
+local function create_join(table_to_join_to, final_schema, join_condition, proceed)
+    return function(insert_structure, check_structure)
+        -- TODO: Need to deep copy insert and check structures here to make
+        -- them immutable per row
+        for row_in_table_to_join_to in table_to_join_to:iterate() do
+            for key, value in pairs(row_in_table_to_join_to) do
+                local fqn = Schema.fqnify(table_to_join_to.name, key)
+                if final_schema:has_fqn(fqn) then
+                    table.insert(insert_structure.columns, {name = fqn})
+                    table.insert(insert_structure.values, {value = value})
+                end
+                table.insert(check_structure.columns, {name = fqn})
+                table.insert(check_structure.values, {value = value})
+            end
+
+            -- Check join condition with INNER JOIN method
+            if matches_condition(check_structure, join_condition) then
+                proceed(insert_structure, check_structure)
+            end
+        end
+    end
+end
+
 function Edible:find(statement)
     local select_structure = parser.find(statement)
     self:assert_table_exists(select_structure.table_name)
 
     local source_table = self.tables[select_structure.table_name]
+
+    -- Calculate the schema of the result table
     local source_schema = source_table.schema
+    for _, join in ipairs(select_structure.joins or {}) do
+        source_schema = source_schema:combine(self.tables[join.table_name].schema)
+    end
 
     source_schema = source_schema:filter_select(lib.map(
         select_structure.columns or {},
@@ -101,34 +131,43 @@ function Edible:find(statement)
             return Schema.fqnify(item.table_name, item.name)
         end))
     local temp_table = Table:new("temp", source_schema)
+    -- End calculate schema of result table
 
-    for row in source_table:iterate() do
-        local insert_structure = {
-            columns = {},
-            values = {}
-        }
+    local insert_structure = {
+        columns = {},
+        values = {}
+    }
 
-        local check_structure = {
-            columns = {},
-            values = {}
-        }
+    local check_structure = {
+        columns = {},
+        values = {}
+    }
 
-
-        for key, value in pairs(row) do
-            local fqn = Schema.fqnify(source_table.name, key)
-            if source_schema:has_fqn(fqn) then
-                table.insert(insert_structure.columns, {name = fqn})
-                table.insert(insert_structure.values, {value = value})
-            end
-            table.insert(check_structure.columns, {name = fqn})
-            table.insert(check_structure.values, {value = value})
-        end
-
+    -- Final function to execute if all joins succeed
+    local check_match_and_insert = function(insert_structure, check_structure)
         if matches_condition(check_structure, select_structure.condition) then
             temp_table:insert(insert_structure)
         end
     end
 
+    -- Create all the joins
+    local latest_join = check_match_and_insert
+    for index = #(select_structure.joins or {}), 1, -1 do
+        local current_join = select_structure.joins[index]
+        latest_join = create_join(
+            self.tables[current_join.table_name], source_schema,
+            current_join.condition, latest_join)
+    end
+
+    -- Join the previous joins with the source table
+    local join_with_source = create_join(source_table, source_schema,
+        nil, latest_join)
+
+    -- Resolve all joins
+    join_with_source(insert_structure, check_structure)
+
+    -- Temp table contains all the data after resolving the statement.
+    -- iterating over it returns all the relevant data
     return coroutine.wrap(function()
         for entry in temp_table:iterate() do
             coroutine.yield(entry)
