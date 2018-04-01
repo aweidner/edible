@@ -26,19 +26,4 @@ function check.table_structure(structure)
     end
 end
 
-function check.subset(first, second)
-    -- Check if the array second is a subset of the table first
-    assert(#first >= #second, "Tables are disjoint length")
-
-    for _, to_look_for in pairs(second) do
-        local found = false
-        for _, match_against in pairs(first) do
-            found = to_look_for == match_against
-            if found then break end
-        end
-        assert(found, string.format("Was not able to find %s in table \n%s",
-            to_look_for, first))
-    end
-end
-
 return check
