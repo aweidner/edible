@@ -98,12 +98,15 @@ function Schema.Schema:length()
     return #self.columns
 end
 
-function Schema.Schema:by_fqn(fully_qualified_name)
+function Schema.Schema:has_fqn(fqn)
+    return self.columns_by_fqn[fqn] ~= nil
+end
+
+function Schema.Schema:by_fqn(fqn)
     -- Look up a column by the fully qualified name (including table name)
-    local table, _ = fully_qualified_name:match("^(.+)%.(.+)$")
-    assert(self.columns_by_fqn[fully_qualified_name], string.format(
-        "Column %s not found in this schema", table))
-    return self.columns_by_fqn[fully_qualified_name]
+    assert(self.columns_by_fqn[fqn], string.format(
+        "Column %s not found in this schema", fqn))
+    return self.columns_by_fqn[fqn]
 end
 
 function Schema.Schema:by_index(index)
@@ -139,6 +142,19 @@ function Schema.Schema:combine(other_schema)
         table.insert(all_column_definitions, column_definition:copy())
     end
     return Schema.from_column_definitions(all_column_definitions)
+end
+
+-- TODO: Add unit tests
+function Schema.fqnify(table_name, column_name)
+    local existing_table, _ = Schema.defqnify(column_name)
+    if existing_table == nil then
+        return table_name .. "." .. column_name
+    end
+    return column_name
+end
+
+function Schema.defqnify(fqn)
+    return fqn:match("^(.+)%.(.+)$")
 end
 
 return Schema
