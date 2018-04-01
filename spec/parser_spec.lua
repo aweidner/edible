@@ -160,17 +160,17 @@ end)
 describe("select", function()
     it("Should be able to get the table name, list of columns, and condition", function()
         local result = find(
-            "SELECT a_table.test1, test2 FROM a_table WHERE test1 == 5 and test2 == 34")
+            "SELECT a_table.test1, a_table.test2 FROM a_table WHERE a_table.test1 == 5 and a_table.test2 == 34")
 
         assert.equals(result.columns[1].name, "test1")
         assert.equals(result.columns[1].table_name, "a_table")
 
         assert.equals(result.columns[2].name, "test2")
-        assert.equals(result.columns[2].table_name, nil)
+        assert.equals(result.columns[2].table_name, "a_table")
 
         assert.equals(result.table_name, "a_table")
 
-        assert.equals(result.condition, "test1 == 5 and test2 == 34")
+        assert.equals(result.condition, "a_table.test1 == 5 and a_table.test2 == 34")
     end)
 
     it("Should be able to support selecting all columns", function()
