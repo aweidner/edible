@@ -3,7 +3,6 @@ local Table = require("src/table").Table
 local parser = require("parser")
 local check = require("check")
 local Schema = require("schema")
-local inspect = require("optional/inspect")
 
 local Edible = {}
 
