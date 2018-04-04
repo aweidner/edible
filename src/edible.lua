@@ -88,25 +88,37 @@ function Edible:drop_table(statement)
     self.tables[table_name] = nil
 end
 
-
 local function create_join(table_to_join_to, final_schema, join_condition, proceed)
     return function(insert_structure, check_structure)
-        -- TODO: Need to deep copy insert and check structures here to make
-        -- them immutable per row
         for row_in_table_to_join_to in table_to_join_to:iterate() do
+
+            -- Shallow copy is good enough here because of the contents of
+            -- the structures.  If we needed to copy anything other than the
+            -- primitive values we would have to do a deep copy
+            local insert_structure_this_iteration = {
+                columns = {table.unpack(insert_structure.columns)},
+                values = {table.unpack(insert_structure.values)}
+            }
+
+            local check_structure_this_iteration = {
+                columns = {table.unpack(check_structure.columns)},
+                values = {table.unpack(check_structure.values)}
+            }
+
             for key, value in pairs(row_in_table_to_join_to) do
                 local fqn = Schema.fqnify(table_to_join_to.name, key)
                 if final_schema:has_fqn(fqn) then
-                    table.insert(insert_structure.columns, {name = fqn})
-                    table.insert(insert_structure.values, {value = value})
+                    table.insert(insert_structure_this_iteration.columns, {name = fqn})
+                    table.insert(insert_structure_this_iteration.values, {value = value})
                 end
-                table.insert(check_structure.columns, {name = fqn})
-                table.insert(check_structure.values, {value = value})
+                table.insert(check_structure_this_iteration.columns, {name = fqn})
+                table.insert(check_structure_this_iteration.values, {value = value})
             end
 
             -- Check join condition with INNER JOIN method
-            if matches_condition(check_structure, join_condition) then
-                proceed(insert_structure, check_structure)
+            if matches_condition(check_structure_this_iteration, join_condition) then
+                proceed(insert_structure_this_iteration,
+                        check_structure_this_iteration)
             end
         end
     end
@@ -143,9 +155,9 @@ function Edible:find(statement)
     }
 
     -- Final function to execute if all joins succeed
-    local check_match_and_insert = function(insert_structure, check_structure)
-        if matches_condition(check_structure, select_structure.condition) then
-            temp_table:insert(insert_structure)
+    local check_match_and_insert = function(final_insert_structure, final_check_structure)
+        if matches_condition(final_check_structure, select_structure.condition) then
+            temp_table:insert(final_insert_structure)
         end
     end
 
