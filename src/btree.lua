@@ -310,7 +310,7 @@ end
 function BTree.Node:new(page)
     -- Nodes hold all the actual data in our BTree.  For this purpose,
     -- they are essentially just wrappers around the Page object
-    local new_node = {page = page}
+    local new_node = {page = page, next_node = nil}
     setmetatable(new_node, self)
     self.__index = self
     return new_node
@@ -329,7 +329,10 @@ end
 function BTree.Node:split()
     -- Splitting a node just means returning the split page wrapped
     -- in a new node.  Again this node may need to be split itself
-    return BTree.Node:new(self.page:split())
+    local new_node = BTree.Node:new(self.page:split())
+    new_node.next_node = self.next_node
+    self.next_node = new_node
+    return new_node
 end
 
 function BTree.Node:visit()
@@ -397,12 +400,12 @@ function BTree.BTree:iterate()
     -- Iteration on a tree means we need to iterate
     -- through the root and all its children
     return coroutine.wrap(function()
-        if self.root == nil then
-            return
-        end
-
-        for value in self.root:iterate() do
-            coroutine.yield(value)
+        local current_node = self.head
+        while current_node ~= nil do
+            for value in current_node:iterate() do
+                coroutine.yield(value)
+            end
+            current_node = current_node.next_node
         end
     end)
 end
