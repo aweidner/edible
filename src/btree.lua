@@ -375,9 +375,11 @@ function BTree.BTree:insert(row)
     -- Add a new node as the root if we don't have one
     if self.root == nil then
         self.root = BTree.Node:new(BTree.NodePage:new(self.page_size))
+        self.root:add(row)
+        self.head = self.root.page.elements[1]
+    else
+        self.root:add(row)
     end
-
-    self.root:add(row)
 
     if self.root:should_split() then
         self.root = BTree.Node:new(BTree.NodePage:new(self.page_size, {

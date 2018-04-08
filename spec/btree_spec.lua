@@ -1,3 +1,4 @@
+local inspect = require("optional/inspect")
 local BTree = require("btree").BTree
 local Row = require("btree").Row
 local Cell = require("btree").Cell
@@ -223,5 +224,28 @@ describe("BTree", function()
         local tree = BTree:new(256)
         tree:insert(Row:new({"a", "b"}, {Cell:new(2), Cell:new("Second entry")}))
         assert.equals(tree:select({"a", "b"}):get(1).data, 2)
+    end)
+end)
+
+describe("B+Tree Characteristics", function()
+    it("Should be able to hold the pointer to the head", function()
+        local tree = BTree:new(256)
+
+        tree:insert(Row:new(1, {Cell:new(1)}))
+        assert.equals(tree.head:get(1):get(1).data, 1)
+    end)
+
+    it("Should be able to hold the pointer to the head after some splits", function()
+        local tree = BTree:new(24)
+
+        tree:insert(Row:new(0, {Cell:new(0)}))
+        tree:insert(Row:new(-1, {Cell:new(-1)}))
+        tree:insert(Row:new(1, {Cell:new(1)}))
+        tree:insert(Row:new(-3, {Cell:new(-3)}))
+        tree:insert(Row:new(-2, {Cell:new(-2)}))
+        tree:insert(Row:new(2, {Cell:new(2)}))
+
+        -- Row id is -3 and we want the first cell in -3
+        assert.equals(tree.head:get(-3):get(1).data, -3)
     end)
 end)
