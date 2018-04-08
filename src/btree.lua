@@ -294,19 +294,6 @@ function BTree.NodePage:split()
     return BTree.NodePage:new(self.max_size, self:internal_split())
 end
 
-function BTree.NodePage:iterate()
-    -- Node pages do not yield their own nodes, they yield
-    -- from the iterators of their children.  This is to facilitate
-    -- traversing the entire tree
-    return coroutine.wrap(function()
-        for _, element in pairs(self.elements) do
-            for value in element:iterate() do
-                coroutine.yield(value)
-            end
-        end
-    end)
-end
-
 function BTree.Node:new(page)
     -- Nodes hold all the actual data in our BTree.  For this purpose,
     -- they are essentially just wrappers around the Page object
