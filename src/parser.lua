@@ -225,6 +225,12 @@ local value = parser.any_of({
     to_number(save_as(parser.pattern("-?[0-9]*%.?[0-9]+"), "value"), "value"),
     to_nil(save_as(parser.pattern("nil"), "value"), "value")
 })
+local update_pair = parser.compose({
+    save_as(identifier, "name"),
+    parser.pattern("="),
+    value
+})
+
 local comma_seperator = parser.pattern("%s*,%s*")
 local whitespace = parser.pattern("%s*")
 local open_paren = parser.pattern("%(")
@@ -262,6 +268,10 @@ end
 parser.types = save_as(parser.any_of({parser.pattern("number"), parser.pattern("string")}), "type")
 parser.column_name = save_as(identifier, "name")
 parser.table_name = save_as(identifier, "table_name")
+parser.where_condition = parser.optional(parser.compose(allow_whitespace({
+    parser.pattern("WHERE"),
+    condition
+})))
 
 -- Describes the entire table that needs to be constructed for
 -- a query to execute, could be one table or tables joined on certain
@@ -283,6 +293,9 @@ parser.columns = save_as(parser.one_or_more_of(parser.column_def, comma_seperato
 parser.column_names = save_as(parser.one_or_more_of(parser.column_name, comma_seperator),
     "columns", "parts")
 parser.values = save_as(parser.one_or_more_of(value, comma_seperator), "values", "parts")
+
+parser.update_values = save_as(parser.one_or_more_of(update_pair, comma_seperator),
+                               "updates", "parts")
 
 parser.select_columns = save_as(parser.one_or_more_of(
     parser.compose({
@@ -317,15 +330,20 @@ parser.find = parser.compose(allow_whitespace({
     parser.any_of({parser.select_columns, parser.pattern("%*")}),
     parser.pattern("FROM"),
     parser.table_description,
-    parser.optional(parser.compose(allow_whitespace({
-        parser.pattern("WHERE"),
-        condition
-    })))
+    parser.where_condition
 }))
 
 parser.drop_table = parser.compose(allow_whitespace({
     parser.pattern("DROP TABLE"),
     parser.table_name
+}))
+
+parser.update = parser.compose(allow_whitespace({
+    parser.pattern("UPDATE"),
+    parser.table_name,
+    parser.pattern("SET"),
+    parser.update_values,
+    parser.where_condition
 }))
 
 return parser
