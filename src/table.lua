@@ -91,6 +91,19 @@ function Table.Table:insert(structure)
     self.row_id = self.row_id + 1
 end
 
+function Table.Table:update(structure)
+    for _, update in ipairs(structure.updates) do
+        update.name = Schema.fqnify(self.name, update.name)
+    end
+
+    for row in self.tree:iterate() do
+        for _, update in ipairs(structure.updates) do
+            local column_index = self.schema:by_fqn(update.name).index
+            row:get(column_index).data = update.value
+        end
+    end
+end
+
 function Table.Table:iterate()
     return coroutine.wrap(function()
         for row in self.tree:iterate() do

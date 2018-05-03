@@ -62,6 +62,8 @@ function Edible:execute(statement)
         return self:find(statement)
     elseif statement:find("^DROP TABLE") then
         return self:drop_table(statement)
+    elseif statement:find("^UPDATE") then
+        return self:update(statement)
     else
         assert(false, "Unable to understand request")
     end
@@ -74,6 +76,11 @@ function Edible:create_table(statement)
     local new_table = Table:new(create_table_structure.table_name,
         Schema.from_create_table(create_table_structure))
     self.tables[new_table.name] = new_table
+end
+
+function Edible:update(statement)
+    local update_structure = parser.update(statement)
+    self.tables[update_structure.table_name]:update(update_structure)
 end
 
 function Edible:insert(statement)

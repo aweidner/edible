@@ -143,3 +143,38 @@ describe("Table", function()
         end
     end)
 end)
+
+describe("Update", function() 
+    it("Should update when there is a condition", function()
+        local table_structure = {
+            table_name = "test",
+            columns = {
+                {type = "number", name = "test"}
+            }
+        }
+
+        local created_table = Table:new("test", Schema.from_create_table(table_structure))
+        created_table:insert(make_from({"test"}, {1}))
+        created_table:update({
+            condition = "test == 1",
+            updates = {{
+                name = "test", value = 2
+            }}
+        })
+
+        local cursor = created_table:iterate()
+
+        for item in cursor do
+            assert.equals(item.test, 2)
+        end
+    end)
+
+    it("Should only update columns that match the condition", function()
+    end)
+
+    it("Should update all columns when there is no condition", function()
+    end)
+
+    it("Will disallow updating of columns to the wrong type", function()
+    end)
+end)

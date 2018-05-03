@@ -38,4 +38,21 @@ describe("Edible", function()
             db:execute("SELECT * FROM shippers")
         end)
     end)
+
+    it("Should allow updating", function()
+        local db = Edible:new()
+        db:execute("CREATE TABLE shippers (ShipperID number, CompanyName string, Phone string)")
+        db:execute("INSERT INTO shippers (ShipperID, CompanyName, Phone) VALUES (1, 'Speedy Express', '(503) 555-9831')")
+        db:execute("UPDATE shippers SET ShipperID=3 WHERE ShipperID == 1")
+
+        local result = db:execute("SELECT * FROM shippers")
+
+        local all_results = {}
+        for item in result do
+            table.insert(all_results, item)
+        end
+
+        assert.equals(#all_results, 1)
+        assert.equals(all_results[1].ShipperID, 3)
+    end)
 end)
